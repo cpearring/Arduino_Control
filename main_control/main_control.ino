@@ -3,21 +3,12 @@
 #include <SPI.h>
 #include <Bridge.h>
 
-unsigned char Bit_Reverse( unsigned char x ) 
-{ 
-    x = ((x >> 1) & 0x55) | ((x << 1) & 0xaa); 
-    x = ((x >> 2) & 0x33) | ((x << 2) & 0xcc); 
-    x = ((x >> 4) & 0x0f) | ((x << 4) & 0xf0); 
-    return x;    
-}
-
-
 long unsigned int rxId;
 unsigned char len = 0;
 unsigned char rxBuf[8];
-char buf[3] = "  ";
-signed short r_RMP = 0;
-signed short l_RMP = 0;
+char buf[64] = "  ";
+signed short r_RPM = 0;
+signed short l_RPM = 0;
 
 void setup()
 {
@@ -36,20 +27,24 @@ void loop()
     {
       CAN.readMsgBuf(&len, rxBuf);              // Read data: len = data length, buf = data byte(s)
       rxId = CAN.getCanId();       // Get message ID
-      if( rxId == 0x212 ) {
-        
-        r_RMP = r_RMP | rxBuf[2];
-        r_RMP = r_RMP | ((long)(rxBuf[3]))<<8;
-	(String(l_RPM) + ":" + String(r_RPM)).toCharArray(buffer, 128);
-        Bridge.put("RPM_STATUS", buffer);
+      if( rxId == 0x213 ) {
+        r_RPM = 0;
+        r_RPM = rxBuf[2];
+        r_RPM = r_RPM | ((long)(rxBuf[3]))<<8;
+        //Serial.println(String(l_RPM)+":"+String(r_RPM));
+	(String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
+        Bridge.put("RPM_STATUS", buf);
       }
-      else if( rxId == 0x213 ) {
-        l_RMP = l_RMP | rxBuf[2];
-        l_RMP = l_RMP | ((long)(rxBuf[3]))<<8;
-        (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buffer, 128);
-        Bridge.put("RPM_STATUS", buffer);
+      else if( rxId == 0x212 ) {
+        l_RPM = 0;
+        l_RPM = l_RPM | rxBuf[2];
+        l_RPM = l_RPM | ((long)(rxBuf[3]))<<8;
+        //Serial.println(String(l_RPM)+":"+String(r_RPM));
+        (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
+        Bridge.put("RPM_STATUS", buf);
       }
     }
+    
     buf[0] = 0;
     buf[1] = 0;
     buf[2] = 0;
