@@ -7,6 +7,8 @@ long unsigned int rxId;
 unsigned char len = 0;
 unsigned char rxBuf[8];
 char buf[64] = "  ";
+char l_Buf[3];
+char r_Buf[3];
 signed short r_RPM = 0;
 signed short l_RPM = 0;
 
@@ -45,25 +47,22 @@ void loop()
       }
     }
     
-    buf[0] = 0;
-    buf[1] = 0;
-    buf[2] = 0;
-    Bridge.get("SET_L_RPM", buf, 3);
+    l_Buf[0] = 0;
+    l_Buf[1] = 0;
+    l_Buf[2] = 0;
+    Bridge.get("SET_L_RPM", l_Buf, 3);
     //Bridge.put("LEFT_RPM", buf);
     unsigned char stmp[6] = {0, 0, 0, 0, 0, 0};
-    stmp[0] = buf[0];
-    stmp[1] = buf[1];
+    stmp[0] = l_Buf[0];
+    stmp[1] = l_Buf[1];
     
-    buf[0] = 0;
-    buf[1] = 0;
-    buf[2] = 0;
-    Bridge.get("SET_R_RPM", buf, 3);
-    //Bridge.put("LEFT_RPM", buf);
-    stmp[2] = buf[0];
-    stmp[3] = buf[1];
-    
-    //Serial.println(stmp[0]);
-    //Serial.println(stmp[1]);
+    r_Buf[0] = 0;
+    r_Buf[1] = 0;
+    r_Buf[2] = 0;
+    Bridge.get("SET_R_RPM", r_Buf, 3);
+    Serial.println(r_Buf);
+    stmp[2] = r_Buf[0];
+    stmp[3] = r_Buf[1];
     
     CAN.sendMsgBuf(0x112, 0, 6, stmp);
     //delay(50);    
