@@ -16,7 +16,8 @@ long unsigned int rxId;
 unsigned char len = 0;
 unsigned char rxBuf[8];
 char buf[3] = "  ";
-char rpm_status[5] = "1111";
+signed short r_RMP = 0;
+signed short l_RMP = 0;
 
 void setup()
 {
@@ -27,10 +28,6 @@ void setup()
   pinMode(2, INPUT);                            // Setting pin 2 for /INT input
   Bridge.put("SET_L_RPM", 0); 
   Bridge.put("SET_R_RPM", 0);
-  rpm_status[3]=128;
-  rpm_status[2]=1;
-  Bridge.put("RPM_STATUS", rpm_status);//0,1 left, 2,3 right
-  
 }
 
 void loop()
@@ -40,22 +37,17 @@ void loop()
       CAN.readMsgBuf(&len, rxBuf);              // Read data: len = data length, buf = data byte(s)
       rxId = CAN.getCanId();       // Get message ID
       if( rxId == 0x212 ) {
-        signed short r_RMP = 0;
+        
         r_RMP = r_RMP | rxBuf[2];
         r_RMP = r_RMP | ((long)(rxBuf[3]))<<8;
-        rpm_status[0] = rxBuf[2]+1;
-        rpm_status[1] = rxBuf[3]+1;
-        //Serial.println(r_RMP);
-        Bridge.put("RPM_STATUS", rpm_status);
+	(String(l_RPM) + ":" + String(r_RPM)).toCharArray(buffer, 128);
+        Bridge.put("RPM_STATUS", buffer);
       }
       else if( rxId == 0x213 ) {
-        signed short r_RMP = 0;
-        r_RMP = r_RMP | rxBuf[2];
-        r_RMP = r_RMP | ((long)(rxBuf[3]))<<8;
-        rpm_status[2] = rxBuf[2]+1;
-        rpm_status[3] = rxBuf[3]+1;
-        //Serial.println(r_RMP);
-        Bridge.put("RPM_STATUS", rpm_status);
+        l_RMP = l_RMP | rxBuf[2];
+        l_RMP = l_RMP | ((long)(rxBuf[3]))<<8;
+        (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buffer, 128);
+        Bridge.put("RPM_STATUS", buffer);
       }
     }
     buf[0] = 0;
