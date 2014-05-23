@@ -14,15 +14,14 @@ signed short l_RPM = 0;
 
 void setup()
 {
-  Serial.begin(115200);
   //while( !Serial ){ ; }
   Bridge.begin();
   CAN.begin(CAN_1000KBPS);                       // init can bus : baudrate = 500k 
   pinMode(2, INPUT);                            // Setting pin 2 for /INT input
   Bridge.put("SET_L_RPM", 0); 
   Bridge.put("SET_R_RPM", 0);
+  Bridge.put("RPM_STATUS","0:0");
 }
-
 void loop()
 {
     if(!digitalRead(2))                         // If pin 2 is low, read receive buffer
@@ -60,7 +59,7 @@ void loop()
     r_Buf[1] = 0;
     r_Buf[2] = 0;
     Bridge.get("SET_R_RPM", r_Buf, 3);
-    Serial.println(r_Buf);
+    //Serial.println(r_Buf);
     stmp[2] = r_Buf[0];
     stmp[3] = r_Buf[1];
     
