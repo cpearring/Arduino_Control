@@ -7,8 +7,8 @@ long unsigned int rxId;
 unsigned char len = 0;
 unsigned char rxBuf[8];
 char buf[64] = " ";
-char l_Buf[3];
-char r_Buf[3];
+char l_Buf[6];
+char r_Buf[6];
 signed short r_RPM = 0;
 signed short l_RPM = 0;
 
@@ -32,7 +32,7 @@ void loop()
         r_RPM = 0;
         r_RPM = rxBuf[2];
         r_RPM = r_RPM | ((long)(rxBuf[3]))<<8;
-        Serial.println(String(l_RPM)+":"+String(r_RPM));
+        //Serial.println(String(l_RPM)+":"+String(r_RPM));
         (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
         Bridge.put("RPM_STATUS", buf);
       }
@@ -40,12 +40,26 @@ void loop()
         l_RPM = 0;
         l_RPM = l_RPM | rxBuf[2];
         l_RPM = l_RPM | ((long)(rxBuf[3]))<<8;
-        Serial.println(String(l_RPM)+":"+String(r_RPM));
+        //Serial.println(String(l_RPM)+":"+String(r_RPM));
         (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
         Bridge.put("RPM_STATUS", buf);
       }
     }
+    unsigned char stmp[6] = {0, 0, 0, 0, 0, 0};//Raw CAN message
     
+    Bridge.get("SET_L_RPM", l_Buf, 6);//Get a string off the bridge (Left)
+    short l = atoi(l_Buf); //Convert to an int
+    Bridge.get("SET_R_RPM", r_Buf, 6);//Get a string off the bridge (Right)
+    short r = atoi(r_Buf); //Convert to an int
+    
+    //Compose CAN message
+    stmp[0] = l%256;
+    stmp[1] = l>>8;
+    stmp[2] = r%256;
+    stmp[3] = r>>8;
+    
+    CAN.sendMsgBuf(0x112, 0, 6, stmp);//Send message
+    /*
     l_Buf[0] = 0;
     l_Buf[1] = 0;
     l_Buf[2] = 0;
@@ -56,8 +70,6 @@ void loop()
     Serial.println(l_Buf);
     //Bridge.put("LEFT_RPM", buf);
     unsigned char stmp[6] = {0, 0, 0, 0, 0, 0};
-    stmp[1] = l%256;
-    stmp[0] = l<<8;
     
     r_Buf[0] = 0;
     r_Buf[1] = 0;
@@ -68,7 +80,7 @@ void loop()
     stmp[3] = r%256;
     stmp[2] = r<<8;
     
-    CAN.sendMsgBuf(0x112, 0, 6, stmp);
+    CAN.sendMsgBuf(0x112, 0, 6, stmp);*/
     //delay(50);
 }
 
