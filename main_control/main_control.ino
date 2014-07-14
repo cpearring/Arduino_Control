@@ -24,20 +24,20 @@ void setup()
 
 void loop()
 {
-    if(!digitalRead(2)) // If pin 2 is low, read receive buffer
+    if(!digitalRead(2)) // If pin 2 is low, can message has been recieved. read receive buffer
     {
       CAN.readMsgBuf(&len, rxBuf); // Read data: len = data length, buf = data byte(s)
       rxId = CAN.getCanId(); // Get message ID
-      if( rxId == 0x213 ) {
-        r_RPM = 0;
+      if( rxId == 0x213 ) {//Left side can bus message recieved
+        r_RPM = 0;//Magic. See GRDSControlAPI file for details
         r_RPM = rxBuf[2];
         r_RPM = r_RPM | ((long)(rxBuf[3]))<<8;
         //Serial.println(String(l_RPM)+":"+String(r_RPM));
         (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
         Bridge.put("RPM_STATUS", buf);
       }
-      else if( rxId == 0x212 ) {
-        l_RPM = 0;
+      else if( rxId == 0x212 ) {//Right side can bus message recieved
+        l_RPM = 0;//Magic. See GRDSControlAPI file for details
         l_RPM = l_RPM | rxBuf[2];
         l_RPM = l_RPM | ((long)(rxBuf[3]))<<8;
         //Serial.println(String(l_RPM)+":"+String(r_RPM));
