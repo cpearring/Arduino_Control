@@ -2,6 +2,12 @@
 #include <mcp_can.h>
 #include <SPI.h>
 #include <Bridge.h>
+#include <SoftwareSerial.h>
+
+#define NMEA_SIZE 256 
+
+SoftwareSerial GPS = SoftwareSerial(3, 6);
+byte NMEA[NMEA_SIZE];
 
 long unsigned int rxId;
 unsigned char len = 0;
@@ -12,11 +18,28 @@ char r_Buf[6];
 signed short r_RPM = 0;
 signed short l_RPM = 0;
 
+void getGPSData() {
+ 
+  byte character;
+  int index = 0;
+   
+  do {
+    if (GPS.available()) {
+      character = GPS.read();
+      NMEA[index] = character;
+      index++;
+    }
+  } while(index < NMEA_SIZE && character != '$');
+   
+  NMEA[index - 2] = '\0';
+}
+
 void setup()
 {
-  //Serial.begin(115200);
+  Serial.begin(115200);
   //while( !Serial ){ ; }
   Bridge.begin();
+  GPS.begin(4800);
   CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
   pinMode(2, INPUT); // Setting pin 2 for /INT input
   Bridge.put("RPM_STATUS", "0:0");
@@ -45,43 +68,34 @@ void loop()
         Bridge.put("RPM_STATUS", buf);
       }
     }
+    //Start GPS section -----------------------------------------
+    getGPSData();
+ 
+    if(NMEA[2] == 'R' && NMEA[3] == 'M' && NMEA[4] == 'C') {
+      int i = 0;
+      for(i = 0; NMEA[i] != '\0'; i++) {
+        Serial.write(NMEA[i]);
+      }
+      Serial.print("<END>\n");
+    }
+    //End GPS section ------------------------------------------
+    
     unsigned char stmp[6] = {0, 0, 0, 0, 0, 0};//Raw CAN message
     
-    Bridge.get("SET_L_RPM", l_Buf, 6);//Get a string off the bridge (Left)
-    short l = atoi(l_Buf); //Convert to an int
-    Bridge.get("SET_R_RPM", r_Buf, 6);//Get a string off the bridge (Right)
-    short r = atoi(r_Buf); //Convert to an int
     
-    //Compose CAN message
-    stmp[0] = l%256;
+    Bridge.get("SET_RPM", buf, 12);//Read composite command from bridge
+    String s_RawCommand(buf);
+    s_RawCommand.substring(0,s_RawCommand.indexOf(':')).toCharArray(l_Buf,6);//Extract left RPM string
+    s_RawCommand.substring(s_RawCommand.indexOf(':')+1).toCharArray(r_Buf,6);//Extract right RPM string
+    short l = atoi(l_Buf);//Convert string to short
+    short r = atoi(r_Buf); 
+    stmp[0] = l%256;//Compose CAN message
     stmp[1] = l>>8;
     stmp[2] = r%256;
     stmp[3] = r>>8;
     
     CAN.sendMsgBuf(0x112, 0, 6, stmp);//Send message
-    /*
-    l_Buf[0] = 0;
-    l_Buf[1] = 0;
-    l_Buf[2] = 0;
-    Bridge.get("SET_L_RPM", l_Buf, 3);
-    short l = atoi(l_Buf);
-    Serial.print("Left:");
-    Serial.println(l);
-    Serial.println(l_Buf);
-    //Bridge.put("LEFT_RPM", buf);
-    unsigned char stmp[6] = {0, 0, 0, 0, 0, 0};
     
-    r_Buf[0] = 0;
-    r_Buf[1] = 0;
-    r_Buf[2] = 0;
-    Bridge.get("SET_R_RPM", r_Buf, 3);
-    short r = atoi(r_Buf);
-    //Serial.println(r_Buf);
-    stmp[3] = r%256;
-    stmp[2] = r<<8;
-    
-    CAN.sendMsgBuf(0x112, 0, 6, stmp);*/
-    //delay(50);
 }
 
 
