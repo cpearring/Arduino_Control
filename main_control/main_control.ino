@@ -2,11 +2,11 @@
 #include <mcp_can.h>
 #include <SPI.h>
 #include <Bridge.h>
-#include <SoftwareSerial.h>
+#include <AltSoftSerial.h>
 
 #define NMEA_SIZE 256 
 
-SoftwareSerial GPS = SoftwareSerial(3, 6);
+AltSoftSerial GPS;
 byte NMEA[NMEA_SIZE];
 
 long unsigned int rxId;
@@ -76,7 +76,7 @@ void loop()
       for(i = 0; NMEA[i] != '\0'; i++) {
         Serial.write(NMEA[i]);
       }
-      Serial.print("<END>\n");
+      //Serial.print("<END>\n");
     }
     //End GPS section ------------------------------------------
     
