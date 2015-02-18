@@ -3,10 +3,18 @@
 #include <SPI.h>
 #include <Bridge.h>
 #include <AltSoftSerial.h>
+#include <Adafruit_GPS.h>
+
+//may not be necessary due to AltSoft that is already included
+#include <SoftwareSerial.h>
 
 #define NMEA_SIZE 256 
 
 AltSoftSerial GPS;
+
+SoftwareSerial mySerial(8,7);
+Adafruit_GPS GPS(&mySerial);
+
 byte NMEA[NMEA_SIZE];
 
 long unsigned int rxId;
@@ -32,6 +40,17 @@ void getGPSData() {
   } while(index < NMEA_SIZE && character != '$');
    
   NMEA[index - 2] = '\0';
+}
+
+void printGPSData()
+{
+  if(GPS.fix)
+  {
+    Serial.print("Location: ");
+    Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
+    Serial.print(", ");
+    Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
+  }
 }
 
 void setup()
