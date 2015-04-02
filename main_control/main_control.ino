@@ -3,10 +3,18 @@
 #include <SPI.h>
 #include <Bridge.h>
 #include <AltSoftSerial.h>
+#include <Adafruit_GPS.h>
 
-#define NMEA_SIZE 256 
+//may not be necessary due to AltSoft that is already included
+#include <SoftwareSerial.h>
+
+#define NMEA_SIZE 256
 
 AltSoftSerial GPS;
+
+SoftwareSerial mySerial(8, 7);
+Adafruit_GPS GPS2(&mySerial);
+
 byte NMEA[NMEA_SIZE];
 
 long unsigned int rxId;
@@ -19,19 +27,43 @@ signed short r_RPM = 0;
 signed short l_RPM = 0;
 
 void getGPSData() {
- 
+
   byte character;
   int index = 0;
-   
+
   do {
     if (GPS.available()) {
       character = GPS.read();
       NMEA[index] = character;
       index++;
     }
-  } while(index < NMEA_SIZE && character != '$');
-   
+  } while (index < NMEA_SIZE && character != '$');
+
   NMEA[index - 2] = '\0';
+}
+
+//test for new GPS part, will just have a separate function for now
+void printGPSData()
+{
+  byte character;
+  int index = 0;
+  if (GPS2.fix)
+  {
+    Serial.print("Location: ");
+    Serial.print(GPS2.latitude, 4); Serial.print(GPS2.lat);
+    Serial.print(", ");
+    Serial.print(GPS2.longitude, 4); Serial.println(GPS2.lon);
+    //read in the GPS lines, should probably look for only GPRMC output though
+    //will add in later
+    //GPRMC function reads as is :  $GPMRC,X,A/V,Y,N/S,Z,E/W,K,T,D,*XX
+    //only really need: Y,N/S,Z,E/W .. everything else is pretty much optional and idk if we want to be
+    //handling that much data
+    character = GPS.read();
+    do {
+      NMEA[index] = character;
+      index++;
+    } while (index < NMEA_SIZE && character != '$');
+  }
 }
 
 void setup()
@@ -47,55 +79,55 @@ void setup()
 
 void loop()
 {
-    if(!digitalRead(2)) // If pin 2 is low, can message has been recieved. read receive buffer
-    {
-      CAN.readMsgBuf(&len, rxBuf); // Read data: len = data length, buf = data byte(s)
-      rxId = CAN.getCanId(); // Get message ID
-      if( rxId == 0x213 ) {//Left side can bus message recieved
-        r_RPM = 0;//Magic. See GRDSControlAPI file for details
-        r_RPM = rxBuf[2];
-        r_RPM = r_RPM | ((long)(rxBuf[3]))<<8;
-        //Serial.println(String(l_RPM)+":"+String(r_RPM));
-        (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
-        Bridge.put("RPM_STATUS", buf);
-      }
-      else if( rxId == 0x212 ) {//Right side can bus message recieved
-        l_RPM = 0;//Magic. See GRDSControlAPI file for details
-        l_RPM = l_RPM | rxBuf[2];
-        l_RPM = l_RPM | ((long)(rxBuf[3]))<<8;
-        //Serial.println(String(l_RPM)+":"+String(r_RPM));
-        (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
-        Bridge.put("RPM_STATUS", buf);
-      }
+  if (!digitalRead(2)) // If pin 2 is low, can message has been recieved. read receive buffer
+  {
+    CAN.readMsgBuf(&len, rxBuf); // Read data: len = data length, buf = data byte(s)
+    rxId = CAN.getCanId(); // Get message ID
+    if ( rxId == 0x213 ) { //Left side can bus message recieved
+      r_RPM = 0;//Magic. See GRDSControlAPI file for details
+      r_RPM = rxBuf[2];
+      r_RPM = r_RPM | ((long)(rxBuf[3])) << 8;
+      //Serial.println(String(l_RPM)+":"+String(r_RPM));
+      (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
+      Bridge.put("RPM_STATUS", buf);
     }
-    //Start GPS section -----------------------------------------
-    getGPSData();
- 
-    if(NMEA[2] == 'R' && NMEA[3] == 'M' && NMEA[4] == 'C') {
-      int i = 0;
-      for(i = 0; NMEA[i] != '\0'; i++) {
-        Serial.write(NMEA[i]);
-      }
-      //Serial.print("<END>\n");
+    else if ( rxId == 0x212 ) { //Right side can bus message recieved
+      l_RPM = 0;//Magic. See GRDSControlAPI file for details
+      l_RPM = l_RPM | rxBuf[2];
+      l_RPM = l_RPM | ((long)(rxBuf[3])) << 8;
+      //Serial.println(String(l_RPM)+":"+String(r_RPM));
+      (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
+      Bridge.put("RPM_STATUS", buf);
     }
-    //End GPS section ------------------------------------------
-    
-    unsigned char stmp[6] = {0, 0, 0, 0, 0, 0};//Raw CAN message
-    
-    
-    Bridge.get("SET_RPM", buf, 12);//Read composite command from bridge
-    String s_RawCommand(buf);
-    s_RawCommand.substring(0,s_RawCommand.indexOf(':')).toCharArray(l_Buf,6);//Extract left RPM string
-    s_RawCommand.substring(s_RawCommand.indexOf(':')+1).toCharArray(r_Buf,6);//Extract right RPM string
-    short l = atoi(l_Buf);//Convert string to short
-    short r = atoi(r_Buf); 
-    stmp[0] = l%256;//Compose CAN message
-    stmp[1] = l>>8;
-    stmp[2] = r%256;
-    stmp[3] = r>>8;
-    
-    CAN.sendMsgBuf(0x112, 0, 6, stmp);//Send message
-    
+  }
+  //Start GPS section -----------------------------------------
+  getGPSData();
+
+  if (NMEA[2] == 'R' && NMEA[3] == 'M' && NMEA[4] == 'C') {
+    int i = 0;
+    for (i = 0; NMEA[i] != '\0'; i++) {
+      Serial.write(NMEA[i]);
+    }
+    //Serial.print("<END>\n");
+  }
+  //End GPS section ------------------------------------------
+
+  unsigned char stmp[6] = {0, 0, 0, 0, 0, 0};//Raw CAN message
+
+
+  Bridge.get("SET_RPM", buf, 12);//Read composite command from bridge
+  String s_RawCommand(buf);
+  s_RawCommand.substring(0, s_RawCommand.indexOf(':')).toCharArray(l_Buf, 6); //Extract left RPM string
+  s_RawCommand.substring(s_RawCommand.indexOf(':') + 1).toCharArray(r_Buf, 6); //Extract right RPM string
+  short l = atoi(l_Buf);//Convert string to short
+  short r = atoi(r_Buf);
+  stmp[0] = l % 256; //Compose CAN message
+  stmp[1] = l >> 8;
+  stmp[2] = r % 256;
+  stmp[3] = r >> 8;
+
+  CAN.sendMsgBuf(0x112, 0, 6, stmp);//Send message
+
 }
 
 
