@@ -1,3 +1,6 @@
+#include <mcp_can.h>
+#include <mcp_can_dfs.h>
+
 // demo: CAN-BUS Shield, receive data
 #include <mcp_can.h>
 #include <SPI.h>
@@ -9,6 +12,12 @@
 #include <SoftwareSerial.h>
 
 #define NMEA_SIZE 256
+
+// the cs pin of the version after v1.1 is default to D9
+// v0.9b and v1.0 is default D10
+const int SPI_CS_PIN = 9;
+
+MCP_CAN CAN(SPI_CS_PIN); // Set CS pin
 
 AltSoftSerial GPS;
 
@@ -84,7 +93,7 @@ void loop()
     CAN.readMsgBuf(&len, rxBuf); // Read data: len = data length, buf = data byte(s)
     rxId = CAN.getCanId(); // Get message ID
     if ( rxId == 0x213 ) { //Left side can bus message recieved
-      r_RPM = 0;//Magic. See GRDSControlAPI file for details
+      r_RPM = 0; //Magic. See GRDSControlAPI file for details
       r_RPM = rxBuf[2];
       r_RPM = r_RPM | ((long)(rxBuf[3])) << 8;
       //Serial.println(String(l_RPM)+":"+String(r_RPM));
@@ -100,7 +109,8 @@ void loop()
       Bridge.put("RPM_STATUS", buf);
     }
   }
-  //Start GPS section -----------------------------------------
+  
+  // Start GPS section -----------------------------------------
   getGPSData();
 
   if (NMEA[2] == 'R' && NMEA[3] == 'M' && NMEA[4] == 'C') {
@@ -112,22 +122,21 @@ void loop()
   }
   //End GPS section ------------------------------------------
 
-  unsigned char stmp[6] = {0, 0, 0, 0, 0, 0};//Raw CAN message
+  unsigned char stmp[6] = {0, 0, 0, 0, 0, 0}; // Raw CAN message
 
 
-  Bridge.get("SET_RPM", buf, 12);//Read composite command from bridge
+  Bridge.get("SET_RPM", buf, 12); // Read composite command from bridge
   String s_RawCommand(buf);
   s_RawCommand.substring(0, s_RawCommand.indexOf(':')).toCharArray(l_Buf, 6); //Extract left RPM string
   s_RawCommand.substring(s_RawCommand.indexOf(':') + 1).toCharArray(r_Buf, 6); //Extract right RPM string
-  short l = atoi(l_Buf);//Convert string to short
+  short l = atoi(l_Buf); // Convert string to short
   short r = atoi(r_Buf);
-  stmp[0] = l % 256; //Compose CAN message
+  stmp[0] = l % 256; // Compose CAN message
   stmp[1] = l >> 8;
   stmp[2] = r % 256;
   stmp[3] = r >> 8;
 
   CAN.sendMsgBuf(0x112, 0, 6, stmp);//Send message
-
 }
 
 
