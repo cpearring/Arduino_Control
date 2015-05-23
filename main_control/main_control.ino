@@ -84,10 +84,14 @@ void setup()
   CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
   pinMode(2, INPUT); // Setting pin 2 for /INT input
   Bridge.put("RPM_STATUS", "0:0");
+  
+  Serial.println("Starting rover...");
 }
 
 void loop()
 {
+  Serial.println("loop 1");
+  
   if (!digitalRead(2)) // If pin 2 is low, can message has been recieved. read receive buffer
   {
     CAN.readMsgBuf(&len, rxBuf); // Read data: len = data length, buf = data byte(s)
@@ -110,8 +114,10 @@ void loop()
     }
   }
   
+  Serial.println("loop 2 aaa");
+  
   // Start GPS section -----------------------------------------
-  getGPSData();
+  /*getGPSData();
 
   if (NMEA[2] == 'R' && NMEA[3] == 'M' && NMEA[4] == 'C') {
     int i = 0;
@@ -119,14 +125,20 @@ void loop()
       Serial.write(NMEA[i]);
     }
     //Serial.print("<END>\n");
-  }
+  }*/
   //End GPS section ------------------------------------------
+  
+  Serial.println("loop 3");
 
   unsigned char stmp[6] = {0, 0, 0, 0, 0, 0}; // Raw CAN message
+  
+  Serial.println("About to receive");
 
 
   Bridge.get("SET_RPM", buf, 12); // Read composite command from bridge
+  Serial.println("Received");
   String s_RawCommand(buf);
+  Serial.println(":"+s_RawCommand+":");
   s_RawCommand.substring(0, s_RawCommand.indexOf(':')).toCharArray(l_Buf, 6); //Extract left RPM string
   s_RawCommand.substring(s_RawCommand.indexOf(':') + 1).toCharArray(r_Buf, 6); //Extract right RPM string
   short l = atoi(l_Buf); // Convert string to short
@@ -135,6 +147,9 @@ void loop()
   stmp[1] = l >> 8;
   stmp[2] = r % 256;
   stmp[3] = r >> 8;
+  
+  Serial.print(String(l)+":"+String(r));
+  Serial.println();
 
   CAN.sendMsgBuf(0x112, 0, 6, stmp);//Send message
 }
