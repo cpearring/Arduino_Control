@@ -7,6 +7,7 @@
 #include <Bridge.h>
 #include <AltSoftSerial.h>
 #include <Adafruit_GPS.h>
+#include <Servo.h>
 
 //may not be necessary due to AltSoft that is already included
 #include <SoftwareSerial.h>
@@ -24,16 +25,9 @@ AltSoftSerial GPS;
 SoftwareSerial mySerial(8, 7);
 Adafruit_GPS GPS2(&mySerial);
 
-byte NMEA[NMEA_SIZE];
+Servo pan, tilt;
 
-long unsigned int rxId;
-unsigned char len = 0;
-unsigned char rxBuf[8];
-char buf[64] = " ";
-char l_Buf[6];
-char r_Buf[6];
-signed short r_RPM = 0;
-signed short l_RPM = 0;
+byte NMEA[NMEA_SIZE];
 
 void getGPSData() {
 
@@ -84,7 +78,11 @@ void setup()
   CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
   pinMode(2, INPUT); // Setting pin 2 for /INT input
   Bridge.put("RPM_STATUS", "0:0");
-  
+
+  // Set up forward camera pan/tilt controllers
+  pan.attach(11);
+  tilt.attach(10);
+
   Serial.println("Starting rover...");
 }
 
@@ -92,26 +90,33 @@ void loop()
 {
   if (!digitalRead(2)) // If pin 2 is low, can message has been recieved. read receive buffer
   {
+    long unsigned int rxId;
+    unsigned char len = 0;
+    unsigned char rxBuf[8];
+    signed short r_RPM = 0;
+    signed short l_RPM = 0;
+
     CAN.readMsgBuf(&len, rxBuf); // Read data: len = data length, buf = data byte(s)
     rxId = CAN.getCanId(); // Get message ID
-    if ( rxId == 0x213 ) { //Left side can bus message recieved
+    if ( rxId == 0x213 ) {
+      //Left side can bus message recieved
       r_RPM = 0; //Magic. See GRDSControlAPI file for details
       r_RPM = rxBuf[2];
       r_RPM = r_RPM | ((long)(rxBuf[3])) << 8;
       //Serial.println(String(l_RPM)+":"+String(r_RPM));
-      (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
-      Bridge.put("RPM_STATUS", buf);
-    }
-    else if ( rxId == 0x212 ) { //Right side can bus message recieved
+      String rpm_str = String(l_RPM) + ":" + String(r_RPM);
+      Bridge.put("RPM_STATUS", rpm_str.c_str());
+    } else if ( rxId == 0x212 ) {
+      // Right side can bus message recieved
       l_RPM = 0;//Magic. See GRDSControlAPI file for details
       l_RPM = l_RPM | rxBuf[2];
       l_RPM = l_RPM | ((long)(rxBuf[3])) << 8;
       //Serial.println(String(l_RPM)+":"+String(r_RPM));
-      (String(l_RPM) + ":" + String(r_RPM)).toCharArray(buf, 64);
-      Bridge.put("RPM_STATUS", buf);
+      String rpm_str = String(l_RPM) + ":" + String(r_RPM);
+      Bridge.put("RPM_STATUS", rpm_str.c_str());
     }
   }
-  
+
   // Start GPS section -----------------------------------------
   /*getGPSData();
 
@@ -124,21 +129,44 @@ void loop()
   }*/
   //End GPS section ------------------------------------------
 
-  unsigned char stmp[6] = {0, 0, 0, 0, 0, 0}; // Raw CAN message
+  ////////////////////////////////////////////////////////////////////////////
+  // RPM controls
 
-  Bridge.get("SET_RPM", buf, 12); // Read composite command from bridge
-  String s_RawCommand(buf);
-  Serial.println(s_RawCommand);
-  s_RawCommand.substring(0, s_RawCommand.indexOf(':')).toCharArray(l_Buf, 6); //Extract left RPM string
-  s_RawCommand.substring(s_RawCommand.indexOf(':') + 1).toCharArray(r_Buf, 6); //Extract right RPM string
-  short l = atoi(l_Buf); // Convert string to short
-  short r = atoi(r_Buf);
-  stmp[0] = l % 256; // Compose CAN message
-  stmp[1] = l >> 8;
-  stmp[2] = r % 256;
-  stmp[3] = r >> 8;
+  unsigned char can_msg[6] = {0, 0, 0, 0, 0, 0}; // Raw CAN message
+  char rpm_buf[64];
+  char l_rpm_buf[6];
+  char r_rpm_buf[6];
 
-  CAN.sendMsgBuf(0x112, 0, 6, stmp);//Send message
+  Bridge.get("SET_RPM", rpm_buf, 12); // Read composite command from bridge
+  String s_rpm_buf(rpm_buf);
+  s_rpm_buf.substring(0, s_rpm_buf.indexOf(':')).toCharArray(l_rpm_buf, 6); //Extract left RPM string
+  s_rpm_buf.substring(s_rpm_buf.indexOf(':') + 1).toCharArray(r_rpm_buf, 6); //Extract right RPM string
+  short l = atoi(l_rpm_buf); // Convert string to short
+  short r = atoi(r_rpm_buf);
+
+  // Send CAN message
+  can_msg[0] = l % 256;
+  can_msg[1] = l >> 8;
+  can_msg[2] = r % 256;
+  can_msg[3] = r >> 8;
+  CAN.sendMsgBuf(0x112, 0, 6, can_msg);
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Foward camera pan
+
+  char f_pan_buf[4];
+
+  Bridge.get("F_PAN", f_pan_buf, 4);
+  int f_pan = atoi(f_pan_buf);
+  pan.write(f_pan);
+  
+  ////////////////////////////////////////////////////////////////////////////
+  // Foward camera tilt
+
+  char f_tilt_buf[4];
+
+  Bridge.get("F_TILT", f_tilt_buf, 4);
+  int f_tilt = atoi(f_tilt_buf);
+  tilt.write(f_tilt);
 }
-
 
