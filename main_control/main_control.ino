@@ -1,3 +1,6 @@
+#include <Event.h>
+#include <Timer.h>
+
 #include <mcp_can.h>
 #include <mcp_can_dfs.h>
 
@@ -14,9 +17,16 @@
 
 #define NMEA_SIZE 256
 
+enum BladeState {
+  BLADE_UP,
+  BLADE_DOWN,
+  BLADE_NONE
+};
+
 // the cs pin of the version after v1.1 is default to D9
 // v0.9b and v1.0 is default D10
 const int SPI_CS_PIN = 9;
+const int PWM_PIN = 13;
 
 MCP_CAN CAN(SPI_CS_PIN); // Set CS pin
 
@@ -27,7 +37,17 @@ Adafruit_GPS GPS2(&mySerial);
 
 Servo pan, tilt;
 
+Timer blade_timer;
+BladeState blade_state = BLADE_NONE;
+int blade_pos = 0;
+int target_blade_pos = 0;
+
 byte NMEA[NMEA_SIZE];
+
+void blade_up();
+void blade_stop();
+void blade_down();
+void step_blade_pos();
 
 void getGPSData() {
 
@@ -76,7 +96,12 @@ void setup()
   Bridge.begin();
   GPS.begin(4800);
   CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
+  
   pinMode(2, INPUT); // Setting pin 2 for /INT input
+  pinMode(PWM_PIN, OUTPUT);
+  
+  blade_timer.every(100, step_blade_pos);
+  
   Bridge.put("RPM_STATUS", "0:0");
 
   // Set up forward camera pan/tilt controllers
@@ -168,5 +193,82 @@ void loop()
   Bridge.get("F_TILT", f_tilt_buf, 4);
   int f_tilt = atoi(f_tilt_buf);
   tilt.write(f_tilt);
+  
+  ////////////////////////////////////////////////////////////////////////////
+  // Blade control
+  
+  char blade_buf[4];
+
+  Bridge.get("BLADE", blade_buf, 4);
+  target_blade_pos = atoi(blade_buf);
+  
+  if (target_blade_pos < blade_pos) {
+    blade_up();
+  } else if (target_blade_pos > blade_pos) {
+    blade_down();
+  } else {
+    blade_stop();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Blade controls
+
+void blade_up()
+{
+  const int up = 0;
+  
+  if (blade_state != BLADE_UP) {
+    digitalWrite(PWM_PIN, HIGH);
+    delay(1);
+    delayMicroseconds(up);
+   
+    digitalWrite(PWM_PIN, LOW);
+    delay(18);
+    delayMicroseconds(1000-up);
+  }
+}
+
+void blade_stop()
+{
+  const int neutral = 500;
+  
+  if (blade_state != BLADE_NONE) {
+    digitalWrite(PWM_PIN, HIGH);
+    delay(1);
+    delayMicroseconds(neutral);
+   
+    digitalWrite(PWM_PIN, LOW);
+    delay(18);
+    delayMicroseconds(1000-neutral);
+  }
+}
+
+void blade_down()
+{
+  const int down = 1000;
+  
+  if (blade_state != BLADE_DOWN) {
+    digitalWrite(PWM_PIN, HIGH);
+    delay(1);
+    delayMicroseconds(down);
+   
+    digitalWrite(PWM_PIN, LOW);
+    delay(18);
+    delayMicroseconds(1000-down);
+  }
+}
+
+void step_blade_pos() {
+  switch (blade_state) {
+    case BLADE_UP:
+      blade_pos += 1;
+      break;
+    case BLADE_DOWN:
+      blade_pos -= 1;
+      break;
+    case BLADE_NONE:
+      break;
+  }
 }
 
