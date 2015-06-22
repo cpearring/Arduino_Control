@@ -1,14 +1,22 @@
-//taken from http://www.hacktronics.com/Tutorials/arduino-current-sensor.html
+
+//analog inputs will be on Arudino Uno
 //variables for measuring voltage
-int batMonPin = A4; //input for the voltage divider, needs to be analog, can be changed to other analog input
+int batMonPin_12 = A4; //input for the voltage divider, needs to be analog, can be changed to other analog input
+int batMonPin_24 = A5;
 int vatVal = 0; //variable for the A/D value (still figuring out what this does)
 float pinVoltage = 0; //variable to hold the calculated voltage
 float batteryVoltage = 0;
 
 //variables for measuring the current
-int analogInPin = A0; //Analog input pin that the arrier board (Pololu cs01a0J1214) OUT is connected to
-int sensorValue = 0; //value read from the board
-int outputValue = 0; //output in milliamps
+int analogInPin_12 = A0; //Analog input pin that the carrier board (Pololu cs01a0J1214) OUT is connected to
+int analogInPin_24 = A1;
+
+int sensorValue_12 = 0; //value read from the board
+int sensorValue_24 = 0;
+
+int outputValue_12 = 0;
+int outputValue_24 = 0; //output in milliamps
+
 unsigned long msec = 0;
 float time = 0.0;
 int sample = 0;

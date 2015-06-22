@@ -203,6 +203,7 @@ void loop()
   target_blade_pos = atoi(blade_buf);
   
   if (target_blade_pos < blade_pos) {
+    //put while loops in these if statements here? otherwise won't loop fast enough?
     blade_up();
   } else if (target_blade_pos > blade_pos) {
     blade_down();
