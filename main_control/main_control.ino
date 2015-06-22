@@ -26,7 +26,7 @@ enum BladeState {
 // the cs pin of the version after v1.1 is default to D9
 // v0.9b and v1.0 is default D10
 const int SPI_CS_PIN = 9;
-const int PWM_PIN = 13;
+const int PWM_PIN = 3;
 
 MCP_CAN CAN(SPI_CS_PIN); // Set CS pin
 
@@ -37,7 +37,7 @@ Adafruit_GPS GPS2(&mySerial);
 
 Servo pan, tilt;
 
-Timer blade_timer;
+//Timer blade_timer;
 BladeState blade_state = BLADE_NONE;
 int blade_pos = 0;
 int target_blade_pos = 0;
@@ -94,15 +94,15 @@ void setup()
   Serial.begin(115200);
   //while( !Serial ){ ; }
   Bridge.begin();
-  GPS.begin(4800);
+  //GPS.begin(4800);
   CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
   
   pinMode(2, INPUT); // Setting pin 2 for /INT input
-  pinMode(PWM_PIN, OUTPUT);
+  //pinMode(PWM_PIN, OUTPUT);
   
-  blade_timer.every(100, step_blade_pos);
+  //blade_timer.every(100, step_blade_pos);
   
-  Bridge.put("RPM_STATUS", "0:0");
+  Bridge.put("RPM_STATUS", "NONE:NONE");
 
   // Set up forward camera pan/tilt controllers
   pan.attach(11);
@@ -113,8 +113,12 @@ void setup()
 
 void loop()
 {
-  if (!digitalRead(2)) // If pin 2 is low, can message has been recieved. read receive buffer
+  Serial.println(String("update"));
+  
+  if (!digitalRead(2)) // CAN message received
   {
+    Serial.println(String("hi"));
+    Serial.println(String("got message") + String(CAN.getCanId()));
     long unsigned int rxId;
     unsigned char len = 0;
     unsigned char rxBuf[8];
@@ -128,7 +132,7 @@ void loop()
       r_RPM = 0; //Magic. See GRDSControlAPI file for details
       r_RPM = rxBuf[2];
       r_RPM = r_RPM | ((long)(rxBuf[3])) << 8;
-      //Serial.println(String(l_RPM)+":"+String(r_RPM));
+      Serial.println(String("left_rpm:") + String(l_RPM)+":"+String(r_RPM));
       String rpm_str = String(l_RPM) + ":" + String(r_RPM);
       Bridge.put("RPM_STATUS", rpm_str.c_str());
     } else if ( rxId == 0x212 ) {
@@ -136,7 +140,7 @@ void loop()
       l_RPM = 0;//Magic. See GRDSControlAPI file for details
       l_RPM = l_RPM | rxBuf[2];
       l_RPM = l_RPM | ((long)(rxBuf[3])) << 8;
-      //Serial.println(String(l_RPM)+":"+String(r_RPM));
+      Serial.println(String("left_rpm:") + String(l_RPM)+":"+String(r_RPM));
       String rpm_str = String(l_RPM) + ":" + String(r_RPM);
       Bridge.put("RPM_STATUS", rpm_str.c_str());
     }
@@ -163,18 +167,22 @@ void loop()
   char r_rpm_buf[6];
 
   Bridge.get("SET_RPM", rpm_buf, 12); // Read composite command from bridge
-  String s_rpm_buf(rpm_buf);
-  s_rpm_buf.substring(0, s_rpm_buf.indexOf(':')).toCharArray(l_rpm_buf, 6); //Extract left RPM string
-  s_rpm_buf.substring(s_rpm_buf.indexOf(':') + 1).toCharArray(r_rpm_buf, 6); //Extract right RPM string
-  short l = atoi(l_rpm_buf); // Convert string to short
-  short r = atoi(r_rpm_buf);
-
-  // Send CAN message
-  can_msg[0] = l % 256;
-  can_msg[1] = l >> 8;
-  can_msg[2] = r % 256;
-  can_msg[3] = r >> 8;
-  CAN.sendMsgBuf(0x112, 0, 6, can_msg);
+  if (rpm_buf != "") {
+    String s_rpm_buf(rpm_buf);
+    s_rpm_buf.substring(0, s_rpm_buf.indexOf(':')).toCharArray(l_rpm_buf, 6); //Extract left RPM string
+    s_rpm_buf.substring(s_rpm_buf.indexOf(':') + 1).toCharArray(r_rpm_buf, 6); //Extract right RPM string
+    short l = atoi(l_rpm_buf); // Convert string to short
+    short r = atoi(r_rpm_buf);
+  
+    // Send CAN message
+    can_msg[0] = l % 256;
+    can_msg[1] = l >> 8;
+    can_msg[2] = r % 256;
+    can_msg[3] = r >> 8;
+    CAN.sendMsgBuf(0x112, 0, 6, can_msg);
+    
+    Serial.println(String("rpm:") + String(s_rpm_buf));
+  }
 
   ////////////////////////////////////////////////////////////////////////////
   // Foward camera pan
@@ -197,18 +205,22 @@ void loop()
   ////////////////////////////////////////////////////////////////////////////
   // Blade control
   
+  /*blade_timer.update();
+  
   char blade_buf[4];
-
+  
   Bridge.get("BLADE", blade_buf, 4);
   target_blade_pos = atoi(blade_buf);
   
-  if (target_blade_pos < blade_pos) {
-    blade_up();
-  } else if (target_blade_pos > blade_pos) {
-    blade_down();
-  } else {
-    blade_stop();
-  }
+  for (int i = 0; i < 10; i++) {
+    if (blade_pos < target_blade_pos) {
+      blade_up();
+    } else if (blade_pos > target_blade_pos) {
+      blade_down();
+    } else {
+      blade_stop();
+    }
+  }*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -218,7 +230,10 @@ void blade_up()
 {
   const int up = 0;
   
-  if (blade_state != BLADE_UP) {
+  //if (blade_state != BLADE_UP) {
+    Serial.println("going up");
+    blade_state = BLADE_UP;
+    
     digitalWrite(PWM_PIN, HIGH);
     delay(1);
     delayMicroseconds(up);
@@ -226,14 +241,17 @@ void blade_up()
     digitalWrite(PWM_PIN, LOW);
     delay(18);
     delayMicroseconds(1000-up);
-  }
+  //}
 }
 
 void blade_stop()
 {
   const int neutral = 500;
   
-  if (blade_state != BLADE_NONE) {
+  //if (blade_state != BLADE_NONE) {
+    //Serial.println("stopping");
+    blade_state = BLADE_NONE;
+    
     digitalWrite(PWM_PIN, HIGH);
     delay(1);
     delayMicroseconds(neutral);
@@ -241,14 +259,16 @@ void blade_stop()
     digitalWrite(PWM_PIN, LOW);
     delay(18);
     delayMicroseconds(1000-neutral);
-  }
+  //}
 }
 
 void blade_down()
 {
   const int down = 1000;
   
-  if (blade_state != BLADE_DOWN) {
+  //if (blade_state != BLADE_DOWN) {
+    blade_state = BLADE_DOWN;
+    
     digitalWrite(PWM_PIN, HIGH);
     delay(1);
     delayMicroseconds(down);
@@ -256,7 +276,7 @@ void blade_down()
     digitalWrite(PWM_PIN, LOW);
     delay(18);
     delayMicroseconds(1000-down);
-  }
+  //}
 }
 
 void step_blade_pos() {
