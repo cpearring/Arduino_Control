@@ -11,9 +11,12 @@
 #include <AltSoftSerial.h>
 #include <Adafruit_GPS.h>
 #include <Servo.h>
+#include <Wire.h>
 
 //may not be necessary due to AltSoft that is already included
 #include <SoftwareSerial.h>
+
+#include "volt_amp.h"
 
 #define NMEA_SIZE 256
 
@@ -41,6 +44,8 @@ Servo pan, tilt;
 BladeState blade_state = BLADE_NONE;
 int blade_pos = 0;
 int target_blade_pos = 0;
+
+Timer va_data_timer;
 
 byte NMEA[NMEA_SIZE];
 
@@ -94,6 +99,7 @@ void setup()
   Serial.begin(115200);
   //while( !Serial ){ ; }
   Bridge.begin();
+  //Wire.begin();
   //GPS.begin(4800);
   CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
   
@@ -101,8 +107,14 @@ void setup()
   //pinMode(PWM_PIN, OUTPUT);
   
   //blade_timer.every(100, step_blade_pos);
+
+  va_data_timer.every(100, update_va_data);
   
   Bridge.put("RPM_STATUS", "NONE:NONE");
+  Bridge.put("12V_VOLTAGE", "0");
+
+  Bridge.put("F_PAN", "90");
+  Bridge.put("F_TILT", "130");
 
   // Set up forward camera pan/tilt controllers
   pan.attach(11);
@@ -113,7 +125,7 @@ void setup()
 
 void loop()
 {
-  Serial.println(String("update"));
+  Serial.println("update");
   
   if (!digitalRead(2)) // CAN message received
   {
@@ -167,7 +179,7 @@ void loop()
   char r_rpm_buf[6];
 
   Bridge.get("SET_RPM", rpm_buf, 12); // Read composite command from bridge
-  if (rpm_buf != "") {
+  //if (rpm_buf != "") {
     String s_rpm_buf(rpm_buf);
     s_rpm_buf.substring(0, s_rpm_buf.indexOf(':')).toCharArray(l_rpm_buf, 6); //Extract left RPM string
     s_rpm_buf.substring(s_rpm_buf.indexOf(':') + 1).toCharArray(r_rpm_buf, 6); //Extract right RPM string
@@ -182,7 +194,7 @@ void loop()
     CAN.sendMsgBuf(0x112, 0, 6, can_msg);
     
     Serial.println(String("rpm:") + String(s_rpm_buf));
-  }
+  //}
 
   ////////////////////////////////////////////////////////////////////////////
   // Foward camera pan
@@ -201,6 +213,11 @@ void loop()
   Bridge.get("F_TILT", f_tilt_buf, 4);
   int f_tilt = atoi(f_tilt_buf);
   tilt.write(f_tilt);
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Voltage amperage sensor timer update
+
+  va_data_timer.update();
   
   ////////////////////////////////////////////////////////////////////////////
   // Blade control
