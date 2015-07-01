@@ -99,9 +99,13 @@ void setup()
   Serial.begin(115200);
   //while( !Serial ){ ; }
   Bridge.begin();
-  //Wire.begin();
+  
   //GPS.begin(4800);
   CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
+
+  //****need this part for communication with uno
+  //Wire.begin();
+  
   
   pinMode(2, INPUT); // Setting pin 2 for /INT input
   //pinMode(PWM_PIN, OUTPUT);
@@ -185,7 +189,32 @@ void loop()
     s_rpm_buf.substring(s_rpm_buf.indexOf(':') + 1).toCharArray(r_rpm_buf, 6); //Extract right RPM string
     short l = atoi(l_rpm_buf); // Convert string to short
     short r = atoi(r_rpm_buf);
-  
+
+    //new part here to control rover via i2c
+    //first byte is speed (just an integer converted into a byte)
+    //second byte is what's enabled (this part's the more interesting part
+
+    ////////******************************enabled byte goes as such:   ************************************////////////
+    //direction is always 0 - forwards    1 - backwards
+    //1st bit is direction for the left motor
+    //2nd bit is direction for the right motor
+    //3rd bit is direction for the sadl or blade .. we won't ever be controlling both at the same time because power issues
+    //4th bit is left motor enabled
+    //5th bit is right motor enabled
+    //6th bit is sadl motor enabled ** don't have the sadl and blade enabled at the same time**
+    //7th bit is blade motor enabled
+    //8th bit is brake enabled - if this is enabled everything else stops ... except maybe sadl and blade motor check with uno code
+
+    //this part can be put in a seperate function
+    //Wire.beginTransmission(8); // transmit to device #8 - may be changed on uno side so make sure numbers are same
+    //Wire.write(byte(speed goes here only positive not negative since that's what the enabled part is for));
+    //Wire.write(byte(enabledstuff));
+    //Wire.endTransmission(); //stops transmitting
+
+    //***** uno will keep repeating the last command sent to it, so you don't have to keep looping, you can just call a function
+    //once and it'll keep on doing that last command**************///
+
+    
     // Send CAN message
     can_msg[0] = l % 256;
     can_msg[1] = l >> 8;
