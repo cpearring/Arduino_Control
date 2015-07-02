@@ -100,9 +100,12 @@ void setup()
   Serial.begin(115200);
   //while( !Serial ){ ; }
   Bridge.begin();
-  Wire.begin();
+
   //GPS.begin(4800);
   CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
+
+  // Need this part for communication with uno
+  Wire.begin();
   
   pinMode(2, INPUT); // Setting pin 2 for /INT input
   //pinMode(PWM_PIN, OUTPUT);

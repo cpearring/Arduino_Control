@@ -1,32 +1,22 @@
-//taken from adafruit test code stuff for GPS
-//need to test send packet data to python
 
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
 
 // Connect the GPS Power pin to 5V
 // Connect the GPS Ground pin to ground
+// Connect the GPS TX (transmit) pin to Digital 8
+// Connect the GPS RX (receive) pin to Digital 7
 
-// If using software serial (sketch example default):
-//   Connect the GPS TX (transmit) pin to Digital 8
-//   Connect the GPS RX (receive) pin to Digital 7
-// If using hardware serial:
-//   Connect the GPS TX (transmit) pin to Arduino RX1 (Digital 0)
-//   Connect the GPS RX (receive) pin to matching TX1 (Digital 1)
+SoftwareSerial mySerial(8, 7);
+Adafruit_GPS GPS(&mySerial);
 
-// If using software serial, keep these lines enabled
-// (you can change the pin numbers to match your wiring):
-//SoftwareSerial mySerial(8, 7);
-//Adafruit_GPS GPS(&mySerial);
+double lat, lng;
+int lat_degree, lat_minute, lat_second, lng_degree, lng_minute, lng_second;
 
-// If using hardware serial, comment
-// out the above two lines and enable these two lines instead:
-Adafruit_GPS GPS(&Serial1);
-HardwareSerial mySerial = Serial1;
 
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
-#define GPSECHO  true
+#define GPSECHO  false
 
 void setup()  
 {
@@ -41,17 +31,10 @@ void setup()
   // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
   GPS.begin(9600);
   
-  // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  // uncomment this line to turn on only the "minimum recommended" data
-  //GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
-  // For parsing data, we don't suggest using anything but either RMC only or RMC+GGA since
-  // the parser doesn't care about other sentences at this time
   
   // Set the update rate
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
-  // For the parsing code to work nicely and have time to sort thru the data, and
-  // print it out we don't suggest using anything higher than 1 Hz
 
   // Request updates on antenna status, comment out to keep quiet
   GPS.sendCommand(PGCMD_ANTENNA);
@@ -103,6 +86,19 @@ void loop()                     // run over and over again
       Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
       Serial.print(", "); 
       Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
+
+      lat = GPS.latitude, 4;
+      lng = GPS.longitude, 4;
+
+      //parse the latitude and longitude into better numbers
+      //need to be integers in order to get rid of those pesky decimal places to look nice
+      lat_degree = ((int)lat % 10000) / 100;
+      lat_minute = ((int)lat % 100);
+      lat_second = ((int)(lat * 10000) % 10000);
+
+      lng_degree = ((int)lng % 10000) / 100;
+      lng_minute = ((int)lng % 100);
+      lng_second = ((int)(lng * 10000) % 10000);
       
       Serial.print("Speed (knots): "); Serial.println(GPS.speed);
       Serial.print("Angle: "); Serial.println(GPS.angle);
