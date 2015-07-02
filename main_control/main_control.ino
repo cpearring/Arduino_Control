@@ -16,6 +16,7 @@
 //may not be necessary due to AltSoft that is already included
 #include <SoftwareSerial.h>
 
+#include "i2c.h"
 #include "volt_amp.h"
 
 #define NMEA_SIZE 256
@@ -99,7 +100,7 @@ void setup()
   Serial.begin(115200);
   //while( !Serial ){ ; }
   Bridge.begin();
-  //Wire.begin();
+  Wire.begin();
   //GPS.begin(4800);
   CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
   
@@ -113,6 +114,8 @@ void setup()
   Bridge.put("RPM_STATUS", "NONE:NONE");
   Bridge.put("12V_VOLTAGE", "0");
 
+  Bridge.put("SET_L_RPM", "0");
+  Bridge.put("SET_R_RPM", "0");
   Bridge.put("F_PAN", "90");
   Bridge.put("F_TILT", "130");
 
@@ -172,29 +175,47 @@ void loop()
 
   ////////////////////////////////////////////////////////////////////////////
   // RPM controls
-
-  unsigned char can_msg[6] = {0, 0, 0, 0, 0, 0}; // Raw CAN message
-  char rpm_buf[64];
-  char l_rpm_buf[6];
-  char r_rpm_buf[6];
-
-  Bridge.get("SET_RPM", rpm_buf, 12); // Read composite command from bridge
-  //if (rpm_buf != "") {
-    String s_rpm_buf(rpm_buf);
-    s_rpm_buf.substring(0, s_rpm_buf.indexOf(':')).toCharArray(l_rpm_buf, 6); //Extract left RPM string
-    s_rpm_buf.substring(s_rpm_buf.indexOf(':') + 1).toCharArray(r_rpm_buf, 6); //Extract right RPM string
-    short l = atoi(l_rpm_buf); // Convert string to short
-    short r = atoi(r_rpm_buf);
   
-    // Send CAN message
-    can_msg[0] = l % 256;
-    can_msg[1] = l >> 8;
-    can_msg[2] = r % 256;
-    can_msg[3] = r >> 8;
-    CAN.sendMsgBuf(0x112, 0, 6, can_msg);
+  char l_rpm_buf[6] = "";
+  char r_rpm_buf[6] = "";
+
+  Bridge.get("SET_L_RPM", l_rpm_buf, 6); // Readcommand from bridge
+  if (String(l_rpm_buf) != String("")) {
+    Bridge.put("SET_RPM", "");
+    int l = atoi(l_rpm_buf); // Convert string to short
+
+    byte i2c_motor_msg = i2c_left;
+    if (l > 0) {
+        i2c_motor_msg += i2c_dir_left;
+    }
+
+    Wire.beginTransmission(8); // transmit to device #8
+    Wire.write(byte(abs(l))); //sends direction to go forward
+    Wire.write(i2c_motor_msg);
+    Wire.endTransmission();    // stop transmitting
     
-    Serial.println(String("rpm:") + String(s_rpm_buf));
-  //}
+    Serial.print("l rpm:");
+    Serial.println(l_rpm_buf);
+  }
+
+  Bridge.get("SET_R_RPM", r_rpm_buf, 6); // Readcommand from bridge
+  if (String(r_rpm_buf) != String("")) {
+    Bridge.put("SET_RPM", "");
+    int r = atoi(r_rpm_buf); // Convert string to short
+
+    byte i2c_motor_msg = i2c_right;
+    if (r > 0) {
+        i2c_motor_msg += i2c_dir_right;
+    }
+
+    Wire.beginTransmission(8); // transmit to device #8
+    Wire.write(byte(abs(r))); //sends direction to go forward
+    Wire.write(i2c_motor_msg);
+    Wire.endTransmission();    // stop transmitting
+    
+    Serial.print("r rpm:");
+    Serial.println(r_rpm_buf);
+  }
 
   ////////////////////////////////////////////////////////////////////////////
   // Foward camera pan
