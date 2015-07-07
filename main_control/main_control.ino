@@ -16,6 +16,7 @@
 //may not be necessary due to AltSoft that is already included
 #include <SoftwareSerial.h>
 
+#include "gps.h"
 #include "i2c.h"
 #include "volt_amp.h"
 
@@ -40,19 +41,11 @@ Adafruit_GPS GPS2(&mySerial);
 
 Servo pan, tilt;
 
-//Timer blade_timer;
-BladeState blade_state = BLADE_NONE;
-int blade_pos = 0;
-int target_blade_pos = 0;
-
+// A bunch of timers
 Timer va_data_timer;
+Timer gps_data_timer;
 
 byte NMEA[NMEA_SIZE];
-
-void blade_up();
-void blade_stop();
-void blade_down();
-void step_blade_pos();
 
 void setup()
 {
@@ -65,11 +58,15 @@ void setup()
 
   // Need this part for communication with uno
   Wire.begin();
+
+  init_gps();
   
-  va_data_timer.every(100, update_va_data);
+  va_data_timer.every(100, send_va_data);
+  gps_data_timer.every(2000, send_gps_data);
   
   Bridge.put("RPM_STATUS", "NONE:NONE");
   Bridge.put("12V_VOLTAGE", "0");
+  Bridge.put("GPS", "NONE");
 
   Bridge.put("SET_L_RPM", "0");
   Bridge.put("SET_R_RPM", "0");
@@ -85,6 +82,14 @@ void setup()
 
 void loop()
 {
+  ////////////////////////////////////////////////////////////////////////////
+  // Update all of the timers and stuff
+
+  update_gps();
+
+  va_data_timer.update();
+  gps_data_timer.update();
+    
   ////////////////////////////////////////////////////////////////////////////
   // RPM controls
   
@@ -126,25 +131,26 @@ void loop()
   ////////////////////////////////////////////////////////////////////////////
   // Foward camera pan
 
-  char f_pan_buf[4];
+  char f_pan_buf[4] = "";
 
   Bridge.get("F_PAN", f_pan_buf, 4);
-  int f_pan = atoi(f_pan_buf);
-  pan.write(f_pan);
+  if (String(f_pan_buf) != String("")) {
+    Bridge.put("F_PAN", "");
+    int f_pan = atoi(f_pan_buf);
+    pan.write(f_pan);
+  }
   
   ////////////////////////////////////////////////////////////////////////////
   // Foward camera tilt
 
-  char f_tilt_buf[4];
+  char f_tilt_buf[4] = "";
 
   Bridge.get("F_TILT", f_tilt_buf, 4);
-  int f_tilt = atoi(f_tilt_buf);
-  tilt.write(f_tilt);
-
-  ////////////////////////////////////////////////////////////////////////////
-  // Voltage amperage sensor timer update
-
-  va_data_timer.update();
+  if (String(f_tilt_buf) != String("")) {
+    Bridge.put("F_TILT", "");
+    int f_tilt = atoi(f_tilt_buf);
+    tilt.write(f_tilt);
+  }
   
   ////////////////////////////////////////////////////////////////////////////
   // Blade control

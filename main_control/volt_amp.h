@@ -93,7 +93,7 @@ VaData read_24v_bus()
     return va_data;
 }
 
-void update_va_data()
+void send_va_data()
 {
     VaData va_12 = read_12v_bus();
 
