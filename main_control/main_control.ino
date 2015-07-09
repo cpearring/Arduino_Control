@@ -1,51 +1,29 @@
 #include <Event.h>
 #include <Timer.h>
 
-#include <mcp_can.h>
-#include <mcp_can_dfs.h>
+//#include <mcp_can.h>
+//#include <mcp_can_dfs.h>
 
-// demo: CAN-BUS Shield, receive data
-#include <mcp_can.h>
-#include <SPI.h>
 #include <Bridge.h>
-#include <AltSoftSerial.h>
-#include <Adafruit_GPS.h>
 #include <Servo.h>
 #include <Wire.h>
 
-//may not be necessary due to AltSoft that is already included
+#include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
 
 #include "gps.h"
 #include "i2c.h"
+#include "thermistor.h"
 #include "volt_amp.h"
 
-#define NMEA_SIZE 256
-
-enum BladeState {
-  BLADE_UP,
-  BLADE_DOWN,
-  BLADE_NONE
-};
-
-// the cs pin of the version after v1.1 is default to D9
-// v0.9b and v1.0 is default D10
-const int SPI_CS_PIN = 9;
-
-MCP_CAN CAN(SPI_CS_PIN); // Set CS pin
-
-AltSoftSerial GPS;
-
-SoftwareSerial mySerial(8, 7);
-Adafruit_GPS GPS2(&mySerial);
+//MCP_CAN CAN(9); // Set CS pin
 
 Servo pan, tilt;
 
 // A bunch of timers
 Timer va_data_timer;
-Timer gps_data_timer;
-
-byte NMEA[NMEA_SIZE];
+Timer temp_data_timer;
+//Timer gps_data_timer;
 
 void setup()
 {
@@ -59,13 +37,16 @@ void setup()
   // Need this part for communication with uno
   Wire.begin();
 
-  init_gps();
+  //init_gps();
   
-  va_data_timer.every(100, send_va_data);
-  gps_data_timer.every(2000, send_gps_data);
+  va_data_timer.every(250, send_va_data);
+  temp_data_timer.every(250, send_thermistor_data);
+  //gps_data_timer.every(2000, send_gps_data);
   
   Bridge.put("RPM_STATUS", "NONE:NONE");
-  Bridge.put("12V_VOLTAGE", "0");
+  Bridge.put("P-12E", "0");
+  Bridge.put("L_MOTOR_TEMP", "0");
+  Bridge.put("R_MOTOR_TEMP", "0");
   Bridge.put("GPS", "NONE");
 
   Bridge.put("SET_L_RPM", "0");
@@ -85,36 +66,37 @@ void loop()
   ////////////////////////////////////////////////////////////////////////////
   // Update all of the timers and stuff
 
-  update_gps();
+  //update_gps();
 
   va_data_timer.update();
-  gps_data_timer.update();
+  temp_data_timer.update();
+  //gps_data_timer.update();
     
   ////////////////////////////////////////////////////////////////////////////
   // RPM controls
   
-  char l_rpm_buf[6] = "";
-  char r_rpm_buf[6] = "";
+  char l_rpm_buf[6] = "\0";
+  char r_rpm_buf[6] = "\0";
 
   Bridge.get("SET_L_RPM", l_rpm_buf, 6); // Readcommand from bridge
-  if (String(l_rpm_buf) != String("")) {
-    Bridge.put("SET_L_RPM", "");
+  if (l_rpm_buf[0] != 0) {
     int l = atoi(l_rpm_buf); // Convert string to short
 
     byte i2c_motor_msg = i2c_left;
     if (l > 0) {
         i2c_motor_msg += i2c_dir_left;
     }
-    
+
     send_i2c_message(byte(abs(l)), i2c_motor_msg, 2);
+
+    Bridge.put("SET_L_RPM", "\0");
     
     Serial.print("l rpm:");
     Serial.println(l_rpm_buf);
   }
 
   Bridge.get("SET_R_RPM", r_rpm_buf, 6); // Readcommand from bridge
-  if (String(r_rpm_buf) != String("")) {
-    Bridge.put("SET_R_RPM", "");
+  if (r_rpm_buf[0] != 0) {
     int r = atoi(r_rpm_buf); // Convert string to short
 
     byte i2c_motor_msg = i2c_right;
@@ -123,6 +105,8 @@ void loop()
     }
 
     send_i2c_message(byte(abs(r)), i2c_motor_msg, 2);
+
+    Bridge.put("SET_R_RPM", "\0");
     
     Serial.print("r rpm:");
     Serial.println(r_rpm_buf);
@@ -131,25 +115,25 @@ void loop()
   ////////////////////////////////////////////////////////////////////////////
   // Foward camera pan
 
-  char f_pan_buf[4] = "";
+  char f_pan_buf[4] = "\0";
 
   Bridge.get("F_PAN", f_pan_buf, 4);
-  if (String(f_pan_buf) != String("")) {
-    Bridge.put("F_PAN", "");
+  if (f_pan_buf[0] != 0) {
     int f_pan = atoi(f_pan_buf);
     pan.write(f_pan);
+    Bridge.put("F_PAN", "\0");
   }
-  
+
   ////////////////////////////////////////////////////////////////////////////
   // Foward camera tilt
 
-  char f_tilt_buf[4] = "";
+  char f_tilt_buf[4] = "\0";
 
   Bridge.get("F_TILT", f_tilt_buf, 4);
-  if (String(f_tilt_buf) != String("")) {
-    Bridge.put("F_TILT", "");
+  if (f_tilt_buf[0] != 0) {
     int f_tilt = atoi(f_tilt_buf);
     tilt.write(f_tilt);
+    Bridge.put("F_TILT", "\0");
   }
   
   ////////////////////////////////////////////////////////////////////////////

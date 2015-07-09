@@ -34,7 +34,7 @@ void update_gps()
     char c = gps.read();
     // if you want to debug, this is a good time to do it!
     if ((c) && (GPS_ECHO))
-        Serial.write(c); 
+        Serial.write(c);
 
     // if a sentence is received, we can check the checksum, parse it...
     if (gps.newNMEAreceived()) {
@@ -52,27 +52,14 @@ void update_gps()
 
 void send_gps_data()
 {
-    Serial.print("\nTime: ");
-    Serial.print(gps.hour, DEC); Serial.print(':');
-    Serial.print(gps.minute, DEC); Serial.print(':');
-    Serial.print(gps.seconds, DEC); Serial.print('.');
-    Serial.println(gps.milliseconds);
-    Serial.print("Date: ");
-    Serial.print(gps.day, DEC); Serial.print('/');
-    Serial.print(gps.month, DEC); Serial.print("/20");
-    Serial.println(gps.year, DEC);
     Serial.print("Fix: "); Serial.print((int)gps.fix);
     Serial.print(" quality: "); Serial.println((int)gps.fixquality);
-
-    Serial.println("gps send");
     
     if (gps.fix) {
-        Serial.println("gps send fix");
-        
-        Serial.print("Location: ");
+        /*Serial.print("Location: ");
         Serial.print(gps.latitude, 4); Serial.print(gps.lat);
         Serial.print(", "); 
-        Serial.print(gps.longitude, 4); Serial.println(gps.lon);
+        Serial.print(gps.longitude, 4); Serial.println(gps.lon);*/
 
         double lat = gps.latitude;
         double lng = gps.longitude;
@@ -85,15 +72,15 @@ void send_gps_data()
 
         int lng_degree = ((int)lng % 10000) / 100;
         int lng_minute = ((int)lng % 100);
-        int lng_second = ((int)(lng * 10000) % 10000);
+        int lng_second = ((int)(lng * 10000) % 10000);*/
         
-        Bridge.put("GPS", String(lat_degree)+":"+String(lat_minute)+":"+String(lat_second)+":"+
+        /*Bridge.put("GPS", String(lat_degree)+":"+String(lat_minute)+":"+String(lat_second)+":"+
                           String(lng_degree)+":"+String(lng_minute)+":"+String(lng_second));*/
 
-        Serial.print("Speed (knots): "); Serial.println(gps.speed);
+        /*Serial.print("Speed (knots): "); Serial.println(gps.speed);
         Serial.print("Angle: "); Serial.println(gps.angle);
         Serial.print("Altitude: "); Serial.println(gps.altitude);
-        Serial.print("Satellites: "); Serial.println((int)gps.satellites);
+        Serial.print("Satellites: "); Serial.println((int)gps.satellites);*/
     }
 }
 

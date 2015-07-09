@@ -3,9 +3,9 @@
 
 struct VaData
 {
-  float voltage;
-  float amps;
-  float watts;
+  double voltage;
+  double amps;
+  double watts;
 };
 
 //inputs/variables for measuring current draw
@@ -16,8 +16,8 @@ const int analogInPin_24 = A1;
 const int batMonPin_12 = A2;
 const int batMonPin_24 = A3;
 
-float R1 = 11900.0; //Resistance of R1 in ohms (is supposed to be 12 kohms)
-float R2 = 1982.0; //Resistance of R2 in ohms  (is supposed to be 5 kohms)
+double R1 = 11900.0; //Resistance of R1 in ohms (is supposed to be 12 kohms)
+double R2 = 1982.0; //Resistance of R2 in ohms  (is supposed to be 5 kohms)
 
 VaData read_12v_bus()
 {
@@ -36,15 +36,15 @@ VaData read_12v_bus()
         sampleBVal += batVal; // add samples together
     }
 
-    //float avgSAV = (float)sampleAmpVal / 10.0;
-    //float avgBVal = (float)sampleBVal / 10.0; //divide by 10 (number of samples) to get a steady reading
+    //double avgSAV = (double)sampleAmpVal / 10.0;
+    //double avgBVal = (double)sampleBVal / 10.0; //divide by 10 (number of samples) to get a steady reading
     
-    float avgSAV = (float)sampleAmpVal;
-    float avgBVal = (float)sampleBVal;
+    double avgSAV = (double)sampleAmpVal;
+    double avgBVal = (double)sampleBVal;
 
     //Serial.println(String("reading: ") + String(avgBVal));
 
-    float scaled_reading = (avgBVal / 1024.0) * 4.4; // Normalize and scale by Arduino's Vcc
+    double scaled_reading = (avgBVal / 1024.0) * 4.4; // Normalize and scale by Arduino's Vcc
 
     VaData va_data;
     va_data.voltage = (scaled_reading / R2) * (R1 + R2);
@@ -73,15 +73,15 @@ VaData read_24v_bus()
         sampleBVal += batVal; // add samples together
     }
 
-    //float avgSAV = (float)sampleAmpVal / 10.0;
-    //float avgBVal = (float)sampleBVal / 10.0; //divide by 10 (number of samples) to get a steady reading
+    //double avgSAV = (double)sampleAmpVal / 10.0;
+    //double avgBVal = (double)sampleBVal / 10.0; //divide by 10 (number of samples) to get a steady reading
     
-    float avgSAV = (float)sampleAmpVal;
-    float avgBVal = (float)sampleBVal;
+    double avgSAV = (double)sampleAmpVal;
+    double avgBVal = (double)sampleBVal;
 
     //Serial.println(String("reading: ") + String(avgBVal));
 
-    float scaled_reading = (avgBVal / 1024.0) * 4.4; // Normalize and scale by Arduino's Vcc
+    double scaled_reading = (avgBVal / 1024.0) * 4.4; // Normalize and scale by Arduino's Vcc
 
     VaData va_data;
     va_data.voltage = (scaled_reading / R2) * (R1 + R2);
@@ -97,8 +97,8 @@ void send_va_data()
 {
     VaData va_12 = read_12v_bus();
 
-    String voltage_str(va_12.voltage);
+    String str = String(va_12.voltage) + ":" + String(va_12.amps);
 
-    Bridge.put("12V_VOLTAGE", voltage_str.c_str());
+    Bridge.put("P-12E", str.c_str());
 }
 
