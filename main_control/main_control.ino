@@ -127,6 +127,28 @@ void loop()
   }
 
   ////////////////////////////////////////////////////////////////////////////
+  // SADL controls
+  
+  char sadl_buf[6] = "\0";
+
+  Bridge.get("SADL", sadl_buf, 6); // Readcommand from bridge
+  if (sadl_buf[0] != 0) {
+    int sadl = atoi(sadl_buf); // Convert string to short
+
+    byte i2c_motor_msg = i2c_sadl;
+    if (sadl > 0) {
+        i2c_motor_msg += i2c_dir;
+    }
+
+    send_i2c_message(byte(abs(sadl)), i2c_motor_msg, 2);
+
+    Bridge.put("SADL", "\0");
+    
+    Serial.print("sadl:");
+    Serial.println(sadl_buf);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
   // Foward camera pan
 
   char f_pan_buf[4] = "\0";

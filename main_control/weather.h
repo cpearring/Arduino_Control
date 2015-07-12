@@ -29,3 +29,14 @@ float read_anemometer(int sensor_pin)
     return wind_speed;
 }
 
+void send_weather_data()
+{
+    float temp = read_temp(A0);
+    float wind_speed = read_anemometer(A1);
+
+    String temp_str(temp);
+    String wind_speed_str(wind_speed);
+
+    Bridge.put("WEATHER", (temp_str + ":" + wind_speed_str).c_str());
+}
+
