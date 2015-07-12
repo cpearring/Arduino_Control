@@ -8,13 +8,22 @@
 #include <Servo.h>
 #include <Wire.h>
 
+// For IMU
+#include <I2Cdev.h>
+#include <ADXL345.h>
+#include <HMC5883L.h>
+#include <L3G4200D.h>
+
+// For GPS
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
 
 #include "gps.h"
 #include "i2c.h"
+#include "imu.h"
 #include "thermistor.h"
 #include "volt_amp.h"
+#include "weather.h"
 
 //MCP_CAN CAN(9); // Set CS pin
 
@@ -23,6 +32,7 @@ Servo pan, tilt;
 // A bunch of timers
 Timer va_data_timer;
 Timer temp_data_timer;
+Timer imu_data_timer;
 //Timer gps_data_timer;
 
 void setup()
@@ -34,19 +44,22 @@ void setup()
   //GPS.begin(4800);
   //CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
 
-  // Need this part for communication with uno
+  // Need this for communication with uno and IMU
   Wire.begin();
 
   //init_gps();
+  init_imu();
   
   va_data_timer.every(250, send_va_data);
   temp_data_timer.every(250, send_thermistor_data);
+  imu_data_timer.every(250, send_imu_data);
   //gps_data_timer.every(2000, send_gps_data);
   
   Bridge.put("RPM_STATUS", "NONE:NONE");
   Bridge.put("P-12E", "0");
   Bridge.put("L_MOTOR_TEMP", "0");
   Bridge.put("R_MOTOR_TEMP", "0");
+  Bridge.put("IMU", "NONE");
   Bridge.put("GPS", "NONE");
 
   Bridge.put("SET_L_RPM", "0");
@@ -70,6 +83,7 @@ void loop()
 
   va_data_timer.update();
   temp_data_timer.update();
+  imu_data_timer.update();
   //gps_data_timer.update();
     
   ////////////////////////////////////////////////////////////////////////////
