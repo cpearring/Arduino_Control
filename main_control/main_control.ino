@@ -1,3 +1,4 @@
+
 #include <Event.h>
 #include <Timer.h>
 
@@ -5,7 +6,6 @@
 //#include <mcp_can_dfs.h>
 
 #include <Bridge.h>
-#include <Servo.h>
 #include <Wire.h>
 
 // For IMU
@@ -18,22 +18,27 @@
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
 
+// For cam pan/tilt
+#include <Adafruit_PWMServoDriver.h>
+
+// For weather temp/pressure sensor
+#include <BMP085.h>
+
 #include "gps.h"
 #include "i2c.h"
 #include "imu.h"
+#include "pan_tilt_cam.h"
+#include "avionics_temp.h"
 #include "thermistor.h"
 #include "volt_amp.h"
 #include "weather.h"
 
 //MCP_CAN CAN(9); // Set CS pin
 
-Servo pan, tilt;
-
 // A bunch of timers
-Timer va_data_timer;
-Timer temp_data_timer;
-Timer imu_data_timer;
-//Timer gps_data_timer;
+Timer timer_250ms;
+Timer timer_500ms;
+Timer timer_2000ms;
 
 void setup()
 {
@@ -49,11 +54,11 @@ void setup()
 
   //init_gps();
   init_imu();
+  init_pan_tilt_cam();
   
-  va_data_timer.every(250, send_va_data);
-  temp_data_timer.every(250, send_thermistor_data);
-  imu_data_timer.every(250, send_imu_data);
-  //gps_data_timer.every(2000, send_gps_data);
+  timer_250ms.every(250, send_250ms_telemetry);
+  timer_500ms.every(500, send_500ms_telemetry);
+  timer_2000ms.every(2000, send_2000ms_telemetry);
   
   Bridge.put("RPM_STATUS", "NONE:NONE");
   Bridge.put("P-12E", "0");
@@ -67,10 +72,6 @@ void setup()
   Bridge.put("F_PAN", "90");
   Bridge.put("F_TILT", "130");
 
-  // Set up forward camera pan/tilt controllers
-  pan.attach(11);
-  tilt.attach(10);
-
   Serial.println("Starting rover...");
 }
 
@@ -81,10 +82,9 @@ void loop()
 
   //update_gps();
 
-  va_data_timer.update();
-  temp_data_timer.update();
-  imu_data_timer.update();
-  //gps_data_timer.update();
+  timer_250ms.update();
+  timer_500ms.update();
+  timer_2000ms.update();
     
   ////////////////////////////////////////////////////////////////////////////
   // RPM controls
@@ -156,7 +156,7 @@ void loop()
   Bridge.get("F_PAN", f_pan_buf, 4);
   if (f_pan_buf[0] != 0) {
     int f_pan = atoi(f_pan_buf);
-    pan.write(f_pan);
+    set_cam_pan(f_pan);
     Bridge.put("F_PAN", "\0");
   }
 
@@ -168,7 +168,7 @@ void loop()
   Bridge.get("F_TILT", f_tilt_buf, 4);
   if (f_tilt_buf[0] != 0) {
     int f_tilt = atoi(f_tilt_buf);
-    tilt.write(f_tilt);
+    set_cam_tilt(f_tilt);
     Bridge.put("F_TILT", "\0");
   }
   
@@ -181,5 +181,23 @@ void loop()
   Bridge.get("BLADE", blade_buf, 4);
   target_blade_pos = atoi(blade_buf);
   */
+}
+
+void send_250ms_telemetry()
+{
+    send_va_data();
+    send_thermistor_data();
+    send_imu_data();
+    send_avionics_temp_data();
+}
+
+void send_500ms_telemetry()
+{
+    send_weather_data();
+}
+
+void send_2000ms_telemetry()
+{
+    //send_gps_data();
 }
 

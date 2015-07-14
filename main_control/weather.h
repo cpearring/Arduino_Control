@@ -1,16 +1,31 @@
-float read_temp(int sensor_pin)
+#include <I2Cdev.h>
+#include <BMP085.h>
+
+BMP085 barometer;
+
+void init_weather()
 {
-    // Get the voltage reading from the temperature sensor
-    int reading = analogRead(sensor_pin);  
+    barometer.initialize();
+}
+    
+float get_temperature()
+{
+    barometer.setControl(BMP085_MODE_TEMPERATURE);
+    //there needs to to be at least a 4.5ms delay can put the set.control before the function call
+    return barometer.getTemperatureC();
+}
 
-    // Convert that reading to voltage, for 3.3v arduino use 3.3
-    float voltage = reading * 5.0;
-    voltage /= 1023.0; 
+float get_pressure()
+{
+    barometer.setControl(BMP085_MODE_PRESSURE_3); //3 is there for 3x oversampling
+    //there needs to be at least a 23.5ms delay here
+    return barometer.getPressure();
+}
 
-    // Calculate temperature from voltage
-    float temp_c = (voltage * 1000) / 9.8; //converting from 9.8 mv per degree 
-
-    return temp_c;
+float get_altitude()
+{
+    //will need to set barometer control to pressure as well, or just call this function after get_pressure ALWAYS
+    return barometer.getAltitude(get_pressure());
 }
 
 float read_anemometer(int sensor_pin)
@@ -31,8 +46,8 @@ float read_anemometer(int sensor_pin)
 
 void send_weather_data()
 {
-    float temp = read_temp(A0);
-    float wind_speed = read_anemometer(A1);
+    float temp = 0.0;
+    float wind_speed = read_anemometer(A5);
 
     String temp_str(temp);
     String wind_speed_str(wind_speed);

@@ -64,6 +64,8 @@ void send_gps_data()
         double lat = gps.latitude;
         double lng = gps.longitude;
 
+        Bridge.put("GPS", String(lat)+":"+String(lng));
+
         //parse the latitude and longitude into better numbers
         //need to be integers in order to get rid of those pesky decimal places to look nice
         /*int lat_degree = ((int)lat % 10000) / 100;
@@ -73,9 +75,6 @@ void send_gps_data()
         int lng_degree = ((int)lng % 10000) / 100;
         int lng_minute = ((int)lng % 100);
         int lng_second = ((int)(lng * 10000) % 10000);*/
-        
-        /*Bridge.put("GPS", String(lat_degree)+":"+String(lat_minute)+":"+String(lat_second)+":"+
-                          String(lng_degree)+":"+String(lng_minute)+":"+String(lng_second));*/
 
         /*Serial.print("Speed (knots): "); Serial.println(gps.speed);
         Serial.print("Angle: "); Serial.println(gps.angle);
