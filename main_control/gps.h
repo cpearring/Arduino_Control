@@ -33,8 +33,8 @@ void update_gps()
 {
     char c = gps.read();
     // if you want to debug, this is a good time to do it!
-    if ((c) && (GPS_ECHO))
-        Serial.write(c);
+    //if ((c) && (GPS_ECHO))
+    //    Serial.write(c);
 
     // if a sentence is received, we can check the checksum, parse it...
     if (gps.newNMEAreceived()) {
@@ -43,8 +43,6 @@ void update_gps()
         // so be very wary if using OUTPUT_ALLDATA and trytng to print out data
         //Serial.println(GPS.lastNMEA());   // this also sets the newNMEAreceived() flag to false
 
-        Serial.println("gps update");
-
         if (!gps.parse(gps.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
             return;  // we can fail to parse a sentence in which case we should just wait for another
     }
@@ -52,9 +50,6 @@ void update_gps()
 
 void send_gps_data()
 {
-    Serial.print("Fix: "); Serial.print((int)gps.fix);
-    Serial.print(" quality: "); Serial.println((int)gps.fixquality);
-    
     if (gps.fix) {
         /*Serial.print("Location: ");
         Serial.print(gps.latitude, 4); Serial.print(gps.lat);

@@ -1,5 +1,3 @@
-const uint8_t i2c_wire_device = 8;
-
 //direction left 0 = backwards 1 = forwards
 const unsigned short i2c_dir_left = 1;
 //direction right

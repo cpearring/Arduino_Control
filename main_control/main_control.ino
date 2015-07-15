@@ -33,12 +33,8 @@
 #include "volt_amp.h"
 #include "weather.h"
 
-//MCP_CAN CAN(9); // Set CS pin
-
 // A bunch of timers
-Timer timer_250ms;
-Timer timer_500ms;
-Timer timer_2000ms;
+Timer timer;
 
 void setup()
 {
@@ -46,19 +42,17 @@ void setup()
   //while( !Serial ){ ; }
   Bridge.begin();
 
-  //GPS.begin(4800);
-  //CAN.begin(CAN_1000KBPS); // init can bus : baudrate = 1M
-
   // Need this for communication with uno and IMU
   Wire.begin();
 
-  //init_gps();
+  init_gps();
   init_imu();
   init_pan_tilt_cam();
+  init_weather();
   
-  timer_250ms.every(250, send_250ms_telemetry);
-  timer_500ms.every(500, send_500ms_telemetry);
-  timer_2000ms.every(2000, send_2000ms_telemetry);
+  timer.every(250, send_250ms_telemetry);
+  timer.every(500, send_500ms_telemetry);
+  timer.every(2000, send_2000ms_telemetry);
   
   Bridge.put("RPM_STATUS", "NONE:NONE");
   Bridge.put("P-12E", "0");
@@ -69,6 +63,8 @@ void setup()
 
   Bridge.put("SET_L_RPM", "0");
   Bridge.put("SET_R_RPM", "0");
+  Bridge.put("SADL", "0");
+  Bridge.put("BLADE", "0");
   Bridge.put("F_PAN", "90");
   Bridge.put("F_TILT", "130");
 
@@ -82,9 +78,7 @@ void loop()
 
   //update_gps();
 
-  timer_250ms.update();
-  timer_500ms.update();
-  timer_2000ms.update();
+  timer.update();
     
   ////////////////////////////////////////////////////////////////////////////
   // RPM controls
@@ -104,9 +98,6 @@ void loop()
     send_i2c_message(byte(abs(l)), i2c_motor_msg, 2);
 
     Bridge.put("SET_L_RPM", "\0");
-    
-    Serial.print("l rpm:");
-    Serial.println(l_rpm_buf);
   }
 
   Bridge.get("SET_R_RPM", r_rpm_buf, 6); // Readcommand from bridge
@@ -121,9 +112,6 @@ void loop()
     send_i2c_message(byte(abs(r)), i2c_motor_msg, 2);
 
     Bridge.put("SET_R_RPM", "\0");
-    
-    Serial.print("r rpm:");
-    Serial.println(r_rpm_buf);
   }
 
   ////////////////////////////////////////////////////////////////////////////
@@ -143,9 +131,25 @@ void loop()
     send_i2c_message(byte(abs(sadl)), i2c_motor_msg, 2);
 
     Bridge.put("SADL", "\0");
-    
-    Serial.print("sadl:");
-    Serial.println(sadl_buf);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Blade controls
+  
+  char blade_buf[6] = "\0";
+
+  Bridge.get("BLADE", blade_buf, 6); // Readcommand from bridge
+  if (blade_buf[0] != 0) {
+    int blade = atoi(blade_buf); // Convert string to short
+
+    byte i2c_motor_msg = i2c_blade;
+    if (blade > 0) {
+        i2c_motor_msg += i2c_dir;
+    }
+
+    send_i2c_message(byte(abs(blade)), i2c_motor_msg, 2);
+
+    Bridge.put("BLADE", "\0");
   }
 
   ////////////////////////////////////////////////////////////////////////////
@@ -171,16 +175,6 @@ void loop()
     set_cam_tilt(f_tilt);
     Bridge.put("F_TILT", "\0");
   }
-  
-  ////////////////////////////////////////////////////////////////////////////
-  // Blade control
-  
-  /*
-  char blade_buf[4];
-  
-  Bridge.get("BLADE", blade_buf, 4);
-  target_blade_pos = atoi(blade_buf);
-  */
 }
 
 void send_250ms_telemetry()
@@ -198,6 +192,6 @@ void send_500ms_telemetry()
 
 void send_2000ms_telemetry()
 {
-    //send_gps_data();
+    send_gps_data();
 }
 

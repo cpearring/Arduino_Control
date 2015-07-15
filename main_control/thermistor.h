@@ -4,12 +4,6 @@ double read_thermistor(int pin, int mode)
 {
     // mode: 0=Farenheit, 1=Celsius, 2=Kelvin
     
-    /*
-    A=0.7170311911 e-3
-    B=2.176343272 e-4
-    C=0.8609219282 e-7
-    */
-    
     const double a = 0.0007170311911;
     const double b = 0.0002176343272;
     const double c = 0.00000008609219282;
