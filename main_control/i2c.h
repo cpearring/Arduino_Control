@@ -27,7 +27,20 @@ void send_i2c_message(byte power, byte command, unsigned int repeat)
         Wire.beginTransmission(8); // transmit to device #8
         Wire.write(power); //sends direction to go forward
         Wire.write(command);
-        //have to put this in here because the slave can only recieve one event
+        Wire.endTransmission();    // stop transmitting
+    }
+
+}
+
+void read_from_uno()
+{
+  byte data[8];
+   // for (unsigned int i = 0; i < repeat; i++)
+    //{
+      //  if (i != 0)
+        //    delay(3);
+        
+        Wire.beginTransmission(8); // transmit to device #8
         Wire.requestFrom(8,8);//request 8 bytes from device #8 (first number is device#, second is amount of bytes)
         if(Wire.available())
         {
@@ -39,7 +52,7 @@ void send_i2c_message(byte power, byte command, unsigned int repeat)
            }
         }
         Wire.endTransmission();    // stop transmitting
-    }
+    //}
     union l_motor_tag {byte l_cur[4];float l_cur_fval;} l_motor_union;
     l_motor_union.l_cur[0] = data[0];
     l_motor_union.l_cur[1] = data[1];
