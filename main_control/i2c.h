@@ -16,6 +16,14 @@ const unsigned short i2c_blade = 1 << 6;
 //brake
 const unsigned short i2c_brake = 1 << 7;
 
+const byte dataCount = 8;
+
+volatile float t, x, y;
+
+union T {byte b[4]; float f;} T;
+union X {byte b[4]; float f;} X;
+//union Y {byte b[4]; float f;} Y;
+
 void send_i2c_message(byte power, byte command, unsigned int repeat)
 {
   byte data[8];
@@ -34,41 +42,25 @@ void send_i2c_message(byte power, byte command, unsigned int repeat)
 
 void read_from_uno()
 {
-  byte data[8];
-   // for (unsigned int i = 0; i < repeat; i++)
-    //{
-      //  if (i != 0)
-        //    delay(3);
-        
-        Wire.beginTransmission(8); // transmit to device #8
-        Wire.requestFrom(8,8);//request 8 bytes from device #8 (first number is device#, second is amount of bytes)
-        if(Wire.available())
+      if(Wire.requestFrom(8,dataCount) == dataCount)
         {
-          unsigned int j = 0;
-          while(Wire.available()) // slave may send less than requested
-           {
-             data[j] = Wire.read();
-             j=j+1;
-           }
+          for (byte i = 0; i < 4; i++) //float is 4 bytes, don't change this
+          {
+            T.b[i] = Wire.read();
+            X.b[i] = Wire.read();
+            //add more here
+          }
+          t = T.f;
+          x = X.f;
+          //y = Y.f;  
         }
-        Wire.endTransmission();    // stop transmitting
-    //}
-    union l_motor_tag {byte l_cur[4];float l_cur_fval;} l_motor_union;
-    l_motor_union.l_cur[0] = data[0];
-    l_motor_union.l_cur[1] = data[1];
-    l_motor_union.l_cur[2] = data[2];
-    l_motor_union.l_cur[3] = data[3];
-    float L_MOTOR_CURRENT = l_motor_union.l_cur_fval;
-
-    union r_motor_tag {byte r_cur[4];float r_cur_fval;} r_motor_union;
-    r_motor_union.r_cur[0] = data[4];
-    r_motor_union.r_cur[1] = data[5];
-    r_motor_union.r_cur[2] = data[6];
-    r_motor_union.r_cur[3] = data[7];
-    float R_MOTOR_CURRENT = r_motor_union.r_cur_fval;
+        else
+        {
+          while (Wire.available()) {byte del = Wire.read();} //Delete any data on wire
+        }
     
-    Bridge.put("L_MOTOR_CURRENT", String(L_MOTOR_CURRENT));
-    Bridge.put("R_MOTOR_CURRENT", String(R_MOTOR_CURRENT));
+    Bridge.put("L_MOTOR_CURRENT", String(t));
+    Bridge.put("R_MOTOR_CURRENT", String(x));
 }
 
 byte forward()
