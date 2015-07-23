@@ -16,13 +16,14 @@ const unsigned short i2c_blade = 1 << 6;
 //brake
 const unsigned short i2c_brake = 1 << 7;
 
-const byte dataCount = 8;
+const byte dataCount = 16;
 
-volatile float t, x, y;
+volatile float t, x, y, z;
 
 union T {byte b[4]; float f;} T;
 union X {byte b[4]; float f;} X;
-//union Y {byte b[4]; float f;} Y;
+union Y {byte b[4]; float f;} Y;
+union Z {byte b[4]; float f;} Z;
 
 void send_i2c_message(byte power, byte command, unsigned int repeat)
 {
@@ -48,19 +49,25 @@ void read_from_uno()
           {
             T.b[i] = Wire.read();
             X.b[i] = Wire.read();
+            Y.b[i] = Wire.read();
+            Z.b[i] = Wire.read();
             //add more here
           }
           t = T.f;
           x = X.f;
-          //y = Y.f;  
+          y = Y.f;
+          z = Z.f;  
         }
         else
         {
           while (Wire.available()) {byte del = Wire.read();} //Delete any data on wire
         }
-    
+
+         String str = String(y)+":"+String(z);
+    //these amp readings are raw, need to convert in gui end
     Bridge.put("L_MOTOR_CURRENT", String(t));
     Bridge.put("R_MOTOR_CURRENT", String(x));
+    Bridge.put("AMP", str.c_str());
 }
 
 byte forward()
