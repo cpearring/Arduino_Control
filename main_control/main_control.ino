@@ -179,13 +179,14 @@ void loop()
 void send_250ms_telemetry()
 {
     send_va_data();
-    send_thermistor_data();
+    
     send_imu_data();
     send_avionics_temp_data();
 }
 
 void send_500ms_telemetry()
 {
+    send_thermistor_data();
     send_weather_data();
     read_from_uno();
 }
