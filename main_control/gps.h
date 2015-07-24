@@ -38,17 +38,21 @@ void init_gps()
 // This needs to be called every loop in the main file
 void update_gps()
 {
-  if (Serial.available())
+  String content = "";
+  char character;
+  //don't worry it gets out of this loop
+  while(gps_serial.available())
   {
-    char c = Serial.read();
-Serial.write(c);
-gps_serial.write(c);
-  }
-  if (gps_serial.available())
+  character = gps_serial.read();
+  content.concat(character);
+  //Serial.print(character);
+  if (character == '\n')
   {
-    char c = gps_serial.read();
-    Bridge.put("GPS", String(c));
+    Bridge.put("GPS", String(content));
+    Serial.print(content);
+    content = "";
   }
+}
 
 }
 
