@@ -189,6 +189,7 @@ void send_250ms_telemetry()
 void send_500ms_telemetry()
 {
     send_weather_data();
+    read_from_uno();
 }
 
 void send_2000ms_telemetry()

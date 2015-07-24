@@ -43,40 +43,30 @@ void send_i2c_message(byte power, byte command, unsigned int repeat)
 
 void read_from_uno()
 {
-      if(Wire.requestFrom(8,dataCount) == dataCount)
+    if(Wire.requestFrom(8,dataCount) == dataCount)
+    {
+        for (byte i = 0; i < 4; i++) // float is 4 bytes, don't change this
         {
-          for (byte i = 0; i < 4; i++) //float is 4 bytes, don't change this
-          {
+            // Left motor
             T.b[i] = Wire.read();
+            // Right motor
             X.b[i] = Wire.read();
+            // P-12 E
             Y.b[i] = Wire.read();
+            // H-24
             Z.b[i] = Wire.read();
             //add more here
-          }
-          t = T.f;
-          x = X.f;
-          y = Y.f;
-          z = Z.f;  
         }
-        else
-        {
-          while (Wire.available()) {byte del = Wire.read();} //Delete any data on wire
-        }
+        t = T.f;
+        x = X.f;
+        y = Y.f;
+        z = Z.f;  
+    }
+    else
+    {
+        while (Wire.available()) {byte del = Wire.read();} // Delete any data on wire
+    }
 
-         String str = String(y)+":"+String(z);
-    //these amp readings are raw, need to convert in gui end
-    Bridge.put("L_MOTOR_CURRENT", String(t));
-    Bridge.put("R_MOTOR_CURRENT", String(x));
+    String str = String(t)+":"+String(x)+":"+String(y)+":"+String(z);
     Bridge.put("AMP", str.c_str());
-}
-
-byte forward()
-{
-    return i2c_dir_left + i2c_dir_right + i2c_left + i2c_right;
-}
-
-byte reverse()
-{
-   byte msg = 0;
-   msg = i2c_left + i2c_right;
 }
