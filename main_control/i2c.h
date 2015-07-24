@@ -17,6 +17,7 @@ const unsigned short i2c_blade = 1 << 6;
 const unsigned short i2c_brake = 1 << 7;
 
 const byte dataCount = 16;
+const float cal = 489.5;
 
 volatile float t, x, y, z;
 
@@ -57,10 +58,10 @@ void read_from_uno()
             Z.b[i] = Wire.read();
             //add more here
         }
-        t = T.f;
-        x = X.f;
-        y = Y.f;
-        z = Z.f;  
+        t = ((T.f - cal)/256.0) * 75.0;
+        x = ((X.f - cal)/256.0) * 75.0;
+        y = ((Y.f * 5000 / 1024) - 500) * 1000 / 133;
+        z = ((Z.f * 5000 / 1024) - 500) * 1000 / 133;  
     }
     else
     {
