@@ -1,5 +1,5 @@
 
-#include <Event.h>
+//#include <Event.h>
 #include <Timer.h>
 
 //#include <mcp_can.h>
@@ -16,8 +16,8 @@
 
 // For GPS
 //#include <Adafruit_GPS.h>
-#include <Casey_GPS.h>
-#include <SoftwareSerial.h>
+//#include <Casey_GPS.h>
+//#include <SoftwareSerial.h>
 
 // For cam pan/tilt
 #include <Adafruit_PWMServoDriver.h>
@@ -25,7 +25,7 @@
 // For weather temp/pressure sensor
 #include <BMP085.h>
 
-#include "gps.h"
+//#include "gps.h"
 #include "i2c.h"
 #include "imu.h"
 #include "pan_tilt_cam.h"
@@ -46,7 +46,7 @@ void setup()
   // Need this for communication with uno and IMU
   Wire.begin();
 
-  init_gps();
+  //init_gps();
   init_imu();
   init_pan_tilt_cam();
   init_weather();
@@ -70,15 +70,13 @@ void setup()
   Bridge.put("F_TILT", "130");
 
   Serial.println("Starting rover...");
+  
 }
 
 void loop()
 {
   ////////////////////////////////////////////////////////////////////////////
   // Update all of the timers and stuff
-
-  //update_gps();
-
   timer.update();
     
   ////////////////////////////////////////////////////////////////////////////
@@ -194,6 +192,7 @@ void send_500ms_telemetry()
 
 void send_2000ms_telemetry()
 {
+    //update_gps();
     //send_gps_data();
 }
 
