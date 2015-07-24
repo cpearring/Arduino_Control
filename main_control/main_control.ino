@@ -15,7 +15,8 @@
 #include <L3G4200D.h>
 
 // For GPS
-#include <Adafruit_GPS.h>
+//#include <Adafruit_GPS.h>
+#include <Casey_GPS.h>
 #include <SoftwareSerial.h>
 
 // For cam pan/tilt
@@ -192,6 +193,6 @@ void send_500ms_telemetry()
 
 void send_2000ms_telemetry()
 {
-    send_gps_data();
+    //send_gps_data();
 }
 

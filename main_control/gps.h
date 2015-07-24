@@ -1,80 +1,66 @@
-#include <Adafruit_GPS.h>
+//#include <Adafruit_GPS.h>
 #include <Bridge.h>
 #include <SoftwareSerial.h>
+#include <Casey_GPS.h>
 
 // Set GPS_ECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
-#define GPS_ECHO  false
+//#define GPS_ECHO  false
 
 // Connect the GPS Power pin to 5V
 // Connect the GPS Ground pin to ground
 // Connect the GPS TX (transmit) pin to Digital 8
 // Connect the GPS RX (receive) pin to Digital 7
 
+#define PMTK_SET_NMEA_UPDATE_1HZ  "$PMTK220,1000*1F"
+#define PMTK_SET_NMEA_UPDATE_5HZ  "$PMTK220,200*2C"
+#define PMTK_SET_NMEA_UPDATE_10HZ "$PMTK220,100*2F"
+
+// turn on only the second sentence (GPRMC)
+#define PMTK_SET_NMEA_OUTPUT_RMCONLY "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29"
+// turn on GPRMC and GGA
+#define PMTK_SET_NMEA_OUTPUT_RMCGGA "$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28"
+// turn on ALL THE DATA
+#define PMTK_SET_NMEA_OUTPUT_ALLDATA "$PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28"
+// turn off output
+#define PMTK_SET_NMEA_OUTPUT_OFF "$PMTK314,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28"
+
 SoftwareSerial gps_serial(8, 7);
-Adafruit_GPS gps(&gps_serial);
+//Adafruit_GPS gps(&gps_serial);
 
 void init_gps()  
 {
-    // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
-    gps.begin(9600);
-
-    gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-
-    // Set the update rate
-    gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
-
-    // Request updates on antenna status, comment out to keep quiet
-    gps.sendCommand(PGCMD_ANTENNA);
+   gps_serial.begin(9600);
+   gps_serial.println(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+   gps_serial.println(PMTK_SET_NMEA_UPDATE_1HZ);
 }
 
 // This needs to be called every loop in the main file
 void update_gps()
 {
-    char c = gps.read();
-    // if you want to debug, this is a good time to do it!
-    //if ((c) && (GPS_ECHO))
-    //    Serial.write(c);
+  if (Serial.available())
+  {
+    char c = Serial.read();
+Serial.write(c);
+gps_serial.write(c);
+  }
+  if (gps_serial.available())
+  {
+    char c = gps_serial.read();
+    Bridge.put("GPS", String(c));
+  }
 
-    // if a sentence is received, we can check the checksum, parse it...
-    if (gps.newNMEAreceived()) {
-        // a tricky thing here is if we print the NMEA sentence, or data
-        // we end up not listening and catching other sentences! 
-        // so be very wary if using OUTPUT_ALLDATA and trytng to print out data
-        //Serial.println(GPS.lastNMEA());   // this also sets the newNMEAreceived() flag to false
-
-        if (!gps.parse(gps.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
-            return;  // we can fail to parse a sentence in which case we should just wait for another
-    }
 }
 
-void send_gps_data()
-{
-    if (gps.fix) {
-        /*Serial.print("Location: ");
-        Serial.print(gps.latitude, 4); Serial.print(gps.lat);
-        Serial.print(", "); 
-        Serial.print(gps.longitude, 4); Serial.println(gps.lon);*/
-
-        double lat = gps.latitude;
-        double lng = gps.longitude;
-
-        Bridge.put("GPS", String(lat)+":"+String(lng));
-
-        //parse the latitude and longitude into better numbers
-        //need to be integers in order to get rid of those pesky decimal places to look nice
-        /*int lat_degree = ((int)lat % 10000) / 100;
-        int lat_minute = ((int)lat % 100);
-        int lat_second = ((int)(lat * 10000) % 10000);
-
-        int lng_degree = ((int)lng % 10000) / 100;
-        int lng_minute = ((int)lng % 100);
-        int lng_second = ((int)(lng * 10000) % 10000);*/
-
-        /*Serial.print("Speed (knots): "); Serial.println(gps.speed);
-        Serial.print("Angle: "); Serial.println(gps.angle);
-        Serial.print("Altitude: "); Serial.println(gps.altitude);
-        Serial.print("Satellites: "); Serial.println((int)gps.satellites);*/
-    }
-}
+//void send_gps_data()
+//{
+//    if (gps.fix) {
+//
+//        double lat = gps.latitude;
+//        double lng = gps.longitude;
+//
+//        Bridge.put("GPS", String(lat)+":"+String(lng));
+//
+//    }
+//}
 
