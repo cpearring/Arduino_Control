@@ -48,6 +48,7 @@ void send_i2c_message(byte power, byte command, unsigned int repeat)
 void amp_init()
 {
   send_i2c_message(byte(0),i2c_brake,2);
+  delay(1000);
   for(int j = 0; j < 10; j++)
   {
   if(Wire.requestFrom(8,dataCount) == dataCount)
