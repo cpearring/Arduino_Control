@@ -4,11 +4,15 @@ float read_avionics_temp(int sensor_pin)
     int reading = analogRead(sensor_pin);  
 
     // Convert that reading to voltage, for 3.3v arduino use 3.3
-    float voltage = reading * 5.0;
-    voltage /= 1023.0;
+    float voltage = float(reading) * 5.0 / 1023;
 
     // Calculate temperature from voltage
-    float temp_c = (voltage * 1000.0) / 9.8; //converting from 9.8 mv per degree 
+    float temp_c = (voltage * 1000.0) / 9.8; //converting from 9.8 mv per degree
+
+    if(temp_c > 32)
+    {
+      temp_c = 32;
+    }
 
     return temp_c;
 }

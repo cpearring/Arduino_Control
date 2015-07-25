@@ -17,7 +17,8 @@ const unsigned short i2c_blade = 1 << 6;
 const unsigned short i2c_brake = 1 << 7;
 
 const byte dataCount = 16;
-const float cal = 489.5;
+float left_cal = 0;
+float right_cal = 0;
 
 volatile float t, x, y, z;
 
@@ -25,6 +26,8 @@ union T {byte b[4]; float f;} T;
 union X {byte b[4]; float f;} X;
 union Y {byte b[4]; float f;} Y;
 union Z {byte b[4]; float f;} Z;
+
+
 
 void send_i2c_message(byte power, byte command, unsigned int repeat)
 {
@@ -39,6 +42,35 @@ void send_i2c_message(byte power, byte command, unsigned int repeat)
         Wire.write(command);
         Wire.endTransmission();    // stop transmitting
     }
+
+}
+
+void amp_init()
+{
+  send_i2c_message(byte(0),i2c_brake,2);
+  for(int j = 0; j < 10; j++)
+  {
+  if(Wire.requestFrom(8,dataCount) == dataCount)
+  {
+    for (byte i = 0; i < 4; i++) // float is 4 bytes, don't change this
+        {
+            // Left motor
+            T.b[i] = Wire.read();
+            // Right motor
+            X.b[i] = Wire.read();
+            // P-12 E
+            Y.b[i] = Wire.read();
+            // H-24
+            Z.b[i] = Wire.read();
+            //add more here
+        }
+        delay(10);
+        left_cal = left_cal + T.f;
+        right_cal = right_cal + X.f;
+  }
+  }
+  left_cal /= 10;
+  right_cal /= 10;
 
 }
 
@@ -58,8 +90,8 @@ void read_from_uno()
             Z.b[i] = Wire.read();
             //add more here
         }
-        t = ((T.f - cal)/256.0) * 75.0;
-        x = ((X.f - cal)/256.0) * 75.0;
+        t = ((T.f - left_cal)/256.0) * 75.0;
+        x = ((X.f - right_cal)/256.0) * 75.0;
         y = (((Y.f * 5000 / 1024) - 500) * 1000 / 133) /1000;
         z = (((Z.f * 5000 / 1024) - 500) * 1000 / 133) /1000;  
     }

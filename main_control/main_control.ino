@@ -50,6 +50,7 @@ void setup()
   init_imu();
   init_pan_tilt_cam();
   init_weather();
+  amp_init();
   
   timer.every(250, send_250ms_telemetry);
   timer.every(500, send_500ms_telemetry);
