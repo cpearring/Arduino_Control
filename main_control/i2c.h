@@ -47,7 +47,7 @@ void send_i2c_message(byte power, byte command, unsigned int repeat)
 
 void amp_init()
 {
-  send_i2c_message(byte(0),i2c_brake,2);
+  send_i2c_message(byte(0),i2c_brake,3);
   delay(1000);
   for(int j = 0; j < 10; j++)
   {
@@ -66,9 +66,13 @@ void amp_init()
             //add more here
         }
         delay(10);
-        left_cal = left_cal + T.f;
-        right_cal = right_cal + X.f;
+        left_cal += T.f;
+        right_cal += X.f;
   }
+   else
+    {
+        while (Wire.available()) {byte del = Wire.read();} // Delete any data on wire
+    }
   }
   left_cal /= 10;
   right_cal /= 10;
