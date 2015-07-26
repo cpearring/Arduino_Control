@@ -37,6 +37,14 @@
 // A bunch of timers
 Timer timer;
 
+// Commands sendable flags
+bool can_send_l_motor = true;
+bool can_send_r_motor = true;
+bool can_send_f_pan = true;
+bool can_send_f_tilt = true;
+bool can_send_sadl = true;
+bool can_send_blade = true;
+
 void setup()
 {
   Serial.begin(115200);
@@ -95,9 +103,11 @@ void loop()
         i2c_motor_msg += i2c_dir_left;
     }
 
-    send_i2c_message(byte(abs(l)), i2c_motor_msg, 2);
-
-    Bridge.put("SET_L_RPM", "\0");
+    if (can_send_l_motor) {
+      send_i2c_message(byte(abs(l)), i2c_motor_msg, 2);
+      Bridge.put("SET_L_RPM", "\0");
+      can_send_l_motor = false;
+    }
   }
 
   Bridge.get("SET_R_RPM", r_rpm_buf, 6); // Readcommand from bridge
@@ -109,9 +119,11 @@ void loop()
         i2c_motor_msg += i2c_dir_right;
     }
 
-    send_i2c_message(byte(abs(r)), i2c_motor_msg, 2);
-
-    Bridge.put("SET_R_RPM", "\0");
+    if (can_send_r_motor) {
+      send_i2c_message(byte(abs(r)), i2c_motor_msg, 2);
+      Bridge.put("SET_R_RPM", "\0");
+      can_send_r_motor = false;
+    }
   }
 
   ////////////////////////////////////////////////////////////////////////////
@@ -128,9 +140,11 @@ void loop()
         i2c_motor_msg += i2c_dir;
     }
 
-    send_i2c_message(byte(abs(sadl)), i2c_motor_msg, 2);
-
-    Bridge.put("SADL", "\0");
+    if (can_send_sadl) {
+      send_i2c_message(byte(abs(sadl)), i2c_motor_msg, 2);
+      Bridge.put("SADL", "\0");
+      can_send_sadl = false;
+    }
   }
 
   ////////////////////////////////////////////////////////////////////////////
@@ -147,9 +161,11 @@ void loop()
         i2c_motor_msg += i2c_dir;
     }
 
-    send_i2c_message(byte(abs(blade)), i2c_motor_msg, 2);
-
-    Bridge.put("BLADE", "\0");
+    if (can_send_blade) {
+      send_i2c_message(byte(abs(blade)), i2c_motor_msg, 2);
+      Bridge.put("BLADE", "\0");
+      can_send_blade = false;
+    }
   }
 
   ////////////////////////////////////////////////////////////////////////////
@@ -160,8 +176,11 @@ void loop()
   Bridge.get("F_PAN", f_pan_buf, 4);
   if (f_pan_buf[0] != 0) {
     int f_pan = atoi(f_pan_buf);
-    set_cam_pan(f_pan);
-    Bridge.put("F_PAN", "\0");
+    if (can_send_f_pan) {
+      set_cam_pan(f_pan);
+      Bridge.put("F_PAN", "\0");
+      can_send_f_pan = false;
+    }
   }
 
   ////////////////////////////////////////////////////////////////////////////
@@ -172,8 +191,11 @@ void loop()
   Bridge.get("F_TILT", f_tilt_buf, 4);
   if (f_tilt_buf[0] != 0) {
     int f_tilt = atoi(f_tilt_buf);
-    set_cam_tilt(f_tilt);
-    Bridge.put("F_TILT", "\0");
+    if (can_send_f_tilt) {
+      set_cam_tilt(f_tilt);
+      Bridge.put("F_TILT", "\0");
+      can_send_f_tilt = false;
+    }
   }
 }
 
@@ -187,6 +209,14 @@ void send_250ms_telemetry()
 
 void send_500ms_telemetry()
 {
+    // We can send motor messages every 0.5 seconds
+    can_send_l_motor = true;
+    can_send_r_motor = true;
+    can_send_f_pan = true;
+    can_send_f_tilt = true;
+    can_send_sadl = true;
+    can_send_blade = true;
+    
     send_thermistor_data();
     send_weather_data();
     read_from_uno();
