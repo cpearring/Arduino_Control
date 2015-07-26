@@ -1,6 +1,7 @@
 
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
+#include <Wire.h>
 
 // Connect the GPS Power pin to 5V
 // Connect the GPS Ground pin to ground
@@ -10,13 +11,45 @@
 SoftwareSerial mySerial(8, 7);
 Adafruit_GPS GPS(&mySerial);
 
-double lat, lng;
-int lat_degree, lat_minute, lat_second, lng_degree, lng_minute, lng_second;
+
+const byte dataCount = 20;
+
+union Lat {byte b[4]; float f;} Lat;
+union Long {byte b[4]; float f;} Long;
+union Spd {byte b[4]; float f;} Spd;
+union Alt {byte b[4]; float f;} Alt;
+union Angle {byte b[4]; float f;} Angle;
 
 
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
 #define GPSECHO  false
+
+void requestEvent()
+{
+  if(GPS.fix)
+  {
+  Lat.f = (GPS.latitude,4);
+  Long.f = (GPS.longitude,4);
+  Spd.f = (GPS.speed);
+  Alt.f = (GPS.altitude);
+  Angle.f = (GPS.angle);
+
+  byte data[dataCount];
+  byte j;
+
+  for(byte i = 0; i<4; i++)
+  {
+    j = i * 5;
+    data[j] = Lat.b[i];
+    data[j+1] = Long.b[i];
+    data[j+2] = Spd.b[i];
+    data[j+3] = Alt.b[i];
+    data[j+4] = Angle.b[i];
+  }
+  Wire.write(data, dataCount);
+  }
+}
 
 void setup()  
 {
@@ -27,6 +60,8 @@ void setup()
   delay(5000);
   Serial.println("Adafruit GPS library basic test!");
   Serial.println("Maybe this might actually work!");
+  Wire.begin(9);
+  Wire.onRequest(requestEvent);//to send data via i2c
 
   // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
   GPS.begin(9600);
@@ -37,11 +72,13 @@ void setup()
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
 
   // Request updates on antenna status, comment out to keep quiet
-  GPS.sendCommand(PGCMD_ANTENNA);
+ // GPS.sendCommand(PGCMD_ANTENNA);
 
   delay(1000);
   // Ask for firmware version
   mySerial.println(PMTK_Q_RELEASE);
+
+  
 }
 
 uint32_t timer = millis();
@@ -85,21 +122,7 @@ void loop()                     // run over and over again
       Serial.print("Location: ");
       Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
       Serial.print(", "); 
-      Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
-
-      lat = GPS.latitude, 4;
-      lng = GPS.longitude, 4;
-
-      //parse the latitude and longitude into better numbers
-      //need to be integers in order to get rid of those pesky decimal places to look nice
-      lat_degree = ((int)lat % 10000) / 100;
-      lat_minute = ((int)lat % 100);
-      lat_second = ((int)(lat * 10000) % 10000);
-
-      lng_degree = ((int)lng % 10000) / 100;
-      lng_minute = ((int)lng % 100);
-      lng_second = ((int)(lng * 10000) % 10000);
-      
+      Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);     
       Serial.print("Speed (knots): "); Serial.println(GPS.speed);
       Serial.print("Angle: "); Serial.println(GPS.angle);
       Serial.print("Altitude: "); Serial.println(GPS.altitude);
@@ -107,3 +130,6 @@ void loop()                     // run over and over again
     }
   }
 }
+
+
+

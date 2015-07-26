@@ -25,7 +25,7 @@
 // For weather temp/pressure sensor
 #include <BMP085.h>
 
-//#include "gps.h"
+#include "gps.h"
 #include "i2c.h"
 #include "imu.h"
 #include "pan_tilt_cam.h"
@@ -226,5 +226,6 @@ void send_2000ms_telemetry()
 {
     //update_gps();
     //send_gps_data();
+    read_from_gps();
 }
 
