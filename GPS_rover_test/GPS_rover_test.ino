@@ -36,7 +36,7 @@ void requestEvent()
   Angle.f = (GPS.angle);
 
   byte data[dataCount];
-  byte j;
+  byte j = 0;
 
   for(byte i = 0; i<4; i++)
   {
