@@ -29,8 +29,8 @@ void requestEvent()
 {
   if(GPS.fix)
   {
-  Lat.f = (GPS.latitude,4);
-  Long.f = (GPS.longitude,4);
+  Lat.f = (GPS.latitude);
+  Long.f = (GPS.longitude);
   Spd.f = (GPS.speed);
   Alt.f = (GPS.altitude);
   Angle.f = (GPS.angle);

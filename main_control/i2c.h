@@ -17,8 +17,8 @@ const unsigned short i2c_blade = 1 << 6;
 const unsigned short i2c_brake = 1 << 7;
 
 const byte dataCount = 16;
-float left_cal = 0;
-float right_cal = 0;
+float left_cal = 0.0;
+float right_cal = 0.0;
 
 volatile float t, x, y, z;
 
