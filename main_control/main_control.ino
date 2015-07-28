@@ -37,14 +37,6 @@
 // A bunch of timers
 Timer timer;
 
-// Commands sendable flags
-bool can_send_l_motor = true;
-bool can_send_r_motor = true;
-bool can_send_f_pan = true;
-bool can_send_f_tilt = true;
-bool can_send_sadl = true;
-bool can_send_blade = true;
-
 void setup()
 {
   Serial.begin(115200);
@@ -208,15 +200,7 @@ void send_250ms_telemetry()
 }
 
 void send_500ms_telemetry()
-{
-    // We can send motor messages every 0.5 seconds
-    can_send_l_motor = true;
-    can_send_r_motor = true;
-    can_send_f_pan = true;
-    can_send_f_tilt = true;
-    can_send_sadl = true;
-    can_send_blade = true;
-    
+{    
     send_thermistor_data();
     send_weather_data();
     read_from_uno();
