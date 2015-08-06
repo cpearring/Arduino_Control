@@ -1,19 +1,19 @@
 #include <I2Cdev.h>
 #include <ADXL345.h>
 #include <HMC5883L.h>
-#include <L3G4200D.h>
+//#include <L3G4200D.h>
 
 ADXL345 accel;
-L3G4200D gyro;
+//L3G4200D gyro;
 HMC5883L mag;
 
 void init_imu()
 {
     accel.initialize();
-    gyro.initialize();
+    //gyro.initialize();
     mag.initialize();
    
-    gyro.setFullScale(2000);
+    //gyro.setFullScale(2000);
 }
 
 void send_imu_data()
@@ -23,8 +23,13 @@ void send_imu_data()
     int16_t mx, my, mz; // Heading
     
     accel.getAcceleration(&ax, &ay, &az);
-    gyro.getAngularVelocity(&avx, &avy, &avz);
+    //gyro.getAngularVelocity(&avx, &avy, &avz);
     mag.getHeading(&mx, &my, &mz);
+
+    // Not using angular velocity yet
+    avx = 0;
+    avy = 0;
+    avz = 0;
 
     // To calculate heading in degrees. 0 degree indicates North
     /*float heading = atan2(my, mx);

@@ -7,6 +7,8 @@
 
 #include <Bridge.h>
 #include <Wire.h>
+#include <YunServer.h>
+#include <YunClient.h>
 
 // For IMU
 #include <I2Cdev.h>
@@ -34,7 +36,9 @@
 #include "volt_amp.h"
 #include "weather.h"
 
-// A bunch of timers
+YunServer server(5555);
+
+// Timing for telemetry data
 Timer timer;
 
 void setup()
@@ -55,122 +59,103 @@ void setup()
   timer.every(250, send_250ms_telemetry);
   timer.every(500, send_500ms_telemetry);
   timer.every(2000, send_2000ms_telemetry);
-  
-  Bridge.put("RPM_STATUS", "NONE:NONE");
-  Bridge.put("P-12E", "0");
-  Bridge.put("L_MOTOR_TEMP", "0");
-  Bridge.put("R_MOTOR_TEMP", "0");
-  Bridge.put("IMU", "NONE");
-  Bridge.put("GPS", "NONE");
 
-  Bridge.put("SET_L_RPM", "0");
-  Bridge.put("SET_R_RPM", "0");
-  Bridge.put("SADL", "0");
-  Bridge.put("BLADE", "0");
-  Bridge.put("F_PAN", "90");
-  Bridge.put("F_TILT", "130");
+  server.listenOnLocalhost();
+  server.begin();
 
   Serial.println("Starting rover...");
   
 }
 
-void loop()
-{
-  ////////////////////////////////////////////////////////////////////////////
-  // Update all of the timers and stuff
-  timer.update();
+void loop() {
+    // Get clients coming from server
+    YunClient client = server.accept();
     
-  ////////////////////////////////////////////////////////////////////////////
-  // RPM controls
-  
-  char l_rpm_buf[6] = "\0";
-  char r_rpm_buf[6] = "\0";
-
-  Bridge.get("SET_L_RPM", l_rpm_buf, 6); // Readcommand from bridge
-  if (l_rpm_buf[0] != 0) {
-    int l = atoi(l_rpm_buf); // Convert string to short
-
-    byte i2c_motor_msg = i2c_left;
-    if (l > 0) {
-        i2c_motor_msg += i2c_dir_left;
+    // There is a new client
+    if (client) {
+        // Tiny timeout
+        client.setTimeout(5);
+        Serial.println("Client connected!");
+        
+        // When we get a client, go in the loop and exit only when the client disconnect. This will happens when the android application is killed (the socket must be closed by the app). This will automatically happens from the website for each http request.
+        while(client.connected()){    
+            client_loop(client);
+        }
+        
+        // Stop rover if we get disconnected
+        stop_rover();
+        
+        // Close connection and free resources.
+        client.stop();
+    } else {
+        Serial.println("no client connected, retrying");
     }
+    // Delay for the battery, for the debug too. Doesn't affect the response time of the Arduino. (Check if there is another client each second)
+    delay(2000);
+}
 
-    send_i2c_message(byte(abs(l)), i2c_motor_msg, 2);
-    Bridge.put("SET_L_RPM", "\0");
-  }
-
-  Bridge.get("SET_R_RPM", r_rpm_buf, 6); // Readcommand from bridge
-  if (r_rpm_buf[0] != 0) {
-    int r = atoi(r_rpm_buf); // Convert string to short
-
-    byte i2c_motor_msg = i2c_right;
-    if (r > 0) {
-        i2c_motor_msg += i2c_dir_right;
+void client_loop(YunClient& client)
+{
+    ////////////////////////////////////////////////////////////////////////////
+    // Update all of the timers and stuff
+    timer.update();
+    
+    int cmd_id = client.read();
+    
+    if (cmd_id != -1) {
+        if (cmd_id == 'A') {
+            int l = client.parseInt();
+            
+            byte i2c_motor_msg = i2c_left;
+            if (l > 0) {
+                i2c_motor_msg += i2c_dir_left;
+            }
+            
+            send_i2c_message(byte(abs(l)), i2c_motor_msg, 2);
+        } else if (cmd_id == 'B') {
+            int r = client.parseInt();
+            
+            byte i2c_motor_msg = i2c_right;
+            if (r > 0) {
+                i2c_motor_msg += i2c_dir_right;
+            }
+            
+            send_i2c_message(byte(abs(r)), i2c_motor_msg, 2);
+        } else if (cmd_id == 'C') {
+            int f_pan = client.parseInt();
+            set_cam_pan(f_pan);
+        } else if (cmd_id == 'D') {
+            int f_tilt = client.parseInt();
+            set_cam_tilt(f_tilt);
+        } else if (cmd_id == 'E') {
+            int sadl = client.parseInt();
+            
+            byte i2c_motor_msg = i2c_sadl;
+            if (sadl > 0) {
+                i2c_motor_msg += i2c_dir;
+            }
+            
+            send_i2c_message(byte(abs(sadl)), i2c_motor_msg, 2);
+        } else if (cmd_id == 'F') {
+            int blade = client.parseInt();
+            
+            byte i2c_motor_msg = i2c_blade;
+            if (blade > 0) {
+                i2c_motor_msg += i2c_dir;
+            }
+            
+            send_i2c_message(byte(abs(blade)), i2c_motor_msg, 2);
+        }
+        client.read(); // Skip terminating '|'
     }
+}
 
-    send_i2c_message(byte(abs(r)), i2c_motor_msg, 2);
-    Bridge.put("SET_R_RPM", "\0");
-  }
-
-  ////////////////////////////////////////////////////////////////////////////
-  // SADL controls
-  
-  char sadl_buf[6] = "\0";
-
-  Bridge.get("SADL", sadl_buf, 6); // Readcommand from bridge
-  if (sadl_buf[0] != 0) {
-    int sadl = atoi(sadl_buf); // Convert string to short
-
-    byte i2c_motor_msg = i2c_sadl;
-    if (sadl > 0) {
-        i2c_motor_msg += i2c_dir;
-    }
-
-    send_i2c_message(byte(abs(sadl)), i2c_motor_msg, 2);
-    Bridge.put("SADL", "\0");
-  }
-
-  ////////////////////////////////////////////////////////////////////////////
-  // Blade controls
-  
-  char blade_buf[6] = "\0";
-
-  Bridge.get("BLADE", blade_buf, 6); // Readcommand from bridge
-  if (blade_buf[0] != 0) {
-    int blade = atoi(blade_buf); // Convert string to short
-
-    byte i2c_motor_msg = i2c_blade;
-    if (blade > 0) {
-        i2c_motor_msg += i2c_dir;
-    }
-
-    send_i2c_message(byte(abs(blade)), i2c_motor_msg, 2);
-    Bridge.put("BLADE", "\0");
-  }
-
-  ////////////////////////////////////////////////////////////////////////////
-  // Foward camera pan
-
-  char f_pan_buf[4] = "\0";
-
-  Bridge.get("F_PAN", f_pan_buf, 4);
-  if (f_pan_buf[0] != 0) {
-    int f_pan = atoi(f_pan_buf);
-    set_cam_pan(f_pan);
-    Bridge.put("F_PAN", "\0");
-  }
-
-  ////////////////////////////////////////////////////////////////////////////
-  // Foward camera tilt
-
-  char f_tilt_buf[4] = "\0";
-
-  Bridge.get("F_TILT", f_tilt_buf, 4);
-  if (f_tilt_buf[0] != 0) {
-    int f_tilt = atoi(f_tilt_buf);
-    set_cam_tilt(f_tilt);
-    Bridge.put("F_TILT", "\0");
-  }
+void stop_rover()
+{
+    send_i2c_message(0, i2c_left, 2);
+    send_i2c_message(0, i2c_right, 2);
+    send_i2c_message(0, i2c_sadl, 2);
+    send_i2c_message(0, i2c_blade, 2);
 }
 
 void send_250ms_telemetry()
