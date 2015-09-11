@@ -29,13 +29,15 @@ float read_anemometer(int sensor_pin)
 
 }
 
-void send_weather_data()
+String get_weather_data()
 {
+    String data;
+    
     if (weather_mode == TEMP_MODE)
     {
         float temp = barometer.getTemperatureC();
         String temp_str(temp);
-        Bridge.put("W_TEMP", temp_str.c_str());
+        data += String("W_TEMP:")+temp_str+"|";
         
         barometer.setControl(BMP085_MODE_PRESSURE_3); //3 is there for 3x oversampling
         weather_mode = PRESSURE_MODE;
@@ -48,7 +50,7 @@ void send_weather_data()
         String pressure_str(pressure);
         String altitude_str(altitude);
         
-        Bridge.put("W_PR_ALT", (pressure_str+":"+altitude_str).c_str());
+        data += String("W_PR_ALT:")+pressure_str+":"+altitude_str+"|";
         
         barometer.setControl(BMP085_MODE_TEMPERATURE);
         weather_mode = TEMP_MODE;
@@ -56,6 +58,8 @@ void send_weather_data()
     
     float wind_speed = read_anemometer(A5);
     String wind_speed_str(wind_speed);
-    Bridge.put("W_WND_SPD", wind_speed_str.c_str());
+    data += String("W_WND_SPD:")+wind_speed_str;
+
+    return data;
 }
 

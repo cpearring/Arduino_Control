@@ -35,7 +35,7 @@ double read_thermistor(int pin, int mode)
     }
 }
 
-void send_thermistor_data()
+String get_thermistor_data()
 {
     double r_motor_temp = read_thermistor(A0, 1);
     double l_motor_temp = read_thermistor(A1, 1);
@@ -43,7 +43,6 @@ void send_thermistor_data()
     String r_motor_temp_str(r_motor_temp);
     String l_motor_temp_str(l_motor_temp);
 
-    Bridge.put("R_MOTOR_TEMP", r_motor_temp_str.c_str());
-    Bridge.put("L_MOTOR_TEMP", l_motor_temp_str.c_str());
+    return String("R_MOTOR_TEMP:")+r_motor_temp_str+"|L_MOTOR_TEMP:", l_motor_temp_str;
 }
 

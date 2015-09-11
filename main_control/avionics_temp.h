@@ -12,7 +12,7 @@ float read_avionics_temp(int sensor_pin)
     return reading;
 }
 
-void send_avionics_temp_data()
+String get_avionics_temp_data()
 {
     double upper_temp = read_avionics_temp(A4);
     double lower_temp = read_avionics_temp(A6);
@@ -20,6 +20,5 @@ void send_avionics_temp_data()
     String upper_temp_str(upper_temp);
     String lower_temp_str(lower_temp);
 
-    Bridge.put("UPR_A_TEMP", upper_temp_str.c_str());
-    Bridge.put("LWR_A_TEMP", lower_temp_str.c_str());
+    return String("UPR_A_TEMP")+":"+upper_temp_str+"|"+String("LWR_A_TEMP")+":"+lower_temp_str;
 }

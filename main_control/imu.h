@@ -16,7 +16,7 @@ void init_imu()
     //gyro.setFullScale(2000);
 }
 
-void send_imu_data()
+String get_imu_data()
 {
     int16_t ax, ay, az; // Acceleration
     int16_t avx, avy, avz; // Angular position
@@ -41,6 +41,6 @@ void send_imu_data()
     String avx_str = String(avx) + ":" + String(avy) + ":" + String(avz);
     String m_str = String(mx) + ":" + String(my) + ":" + String(mz);
 
-    Bridge.put("IMU", (ax_str + ":" + avx_str + ":" + m_str).c_str());
+    return String("IMU:")+ax_str + ":" + avx_str + ":" + m_str;
 }
 

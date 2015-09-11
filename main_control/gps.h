@@ -78,7 +78,7 @@ union Spd {byte b[4]; float f;} Spd;
 union Alt {byte b[4]; float f;} Alt;
 union Angle {byte b[4]; float f;} Angle;
 
-void read_from_gps()
+String get_gps()
 {
     if(Wire.requestFrom(9,dataCount_yun) == dataCount_yun)
     {
@@ -108,7 +108,7 @@ void read_from_gps()
         while (Wire.available()) {byte del = Wire.read();} // Delete any data on wire
     }
 
-    String str = String(lat)+":"+String(lng)+":"+String(spd)+":"+String(alt) + ":"+String(angle);
-    Bridge.put("GPS", str.c_str());
+    String str = String("GPS:")+String(lat)+":"+String(lng)+":"+String(spd)+":"+String(alt) + ":"+String(angle);
+    return str;
 }
 

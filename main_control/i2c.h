@@ -79,7 +79,7 @@ void amp_init()
 
 }
 
-void read_from_uno()
+String get_uno_amps()
 {
     if(Wire.requestFrom(8,dataCount) == dataCount)
     {
@@ -105,6 +105,6 @@ void read_from_uno()
         while (Wire.available()) {byte del = Wire.read();} // Delete any data on wire
     }
 
-    String str = String(t)+":"+String(x)+":"+String(y)+":"+String(z);
-    Bridge.put("AMP", str.c_str());
+    String str = String("AMP:")+String(t)+":"+String(x)+":"+String(y)+":"+String(z);
+    return str;
 }
