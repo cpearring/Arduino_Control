@@ -43,6 +43,6 @@ String get_thermistor_data()
     String r_motor_temp_str(r_motor_temp);
     String l_motor_temp_str(l_motor_temp);
 
-    return String("R_MOTOR_TEMP:")+r_motor_temp_str+"|L_MOTOR_TEMP:", l_motor_temp_str;
+    return String("R_MOTOR_TEMP:")+r_motor_temp_str+"|L_MOTOR_TEMP:"+l_motor_temp_str;
 }
 

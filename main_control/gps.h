@@ -32,13 +32,13 @@ String get_gps()
         spd = Spd.f;
         alt = Alt.f;
         angle = Angle.f;
+
+        return String("GPS:")+String(lat)+":"+String(lng)+":"+String(spd)+":"+String(alt) + ":"+String(angle);
     }
     else
     {
         while (Wire.available()) {byte del = Wire.read();} // Delete any data on wire
+        return String();
     }
-
-    String str = String("GPS:")+String(lat)+":"+String(lng)+":"+String(spd)+":"+String(alt) + ":"+String(angle);
-    return str;
 }
 

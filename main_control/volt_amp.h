@@ -16,6 +16,6 @@ String get_va_data()
     float v_p_12_e = read_voltage(A2, 19890.0, 1951.0);
     float v_p_12_pl = read_voltage(A7, 19890.0, 1994.0);
 
-    return String("VOLT_AMP:")+String(v_h_48)+":"+String(v_h_24)+":"+String(v_p_12_e)+":"+String(v_p_12_pl);
+    return String("VOLT:")+String(v_h_48)+":"+String(v_h_24)+":"+String(v_p_12_e)+":"+String(v_p_12_pl);
 }
 
