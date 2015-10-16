@@ -38,7 +38,8 @@ String get_imu_data()
     heading *= 180/M_PI;*/
 
     String ax_str = String(ax) + ":" + String(ay) + ":" + String(az);
-    String avx_str = String(avx) + ":" + String(avy) + ":" + String(avz);
+    //String avx_str = String(avx) + ":" + String(avy) + ":" + String(avz);
+    String avx_str = "0:0:0";
     String m_str = String(mx) + ":" + String(my) + ":" + String(mz);
 
     return String("IMU:")+ax_str + ":" + avx_str + ":" + m_str;
