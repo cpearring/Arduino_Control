@@ -148,6 +148,8 @@ void client_loop(YunClient& client)
             }
             
             send_i2c_message(byte(abs(blade)), i2c_motor_msg, 2);
+        } else if (cmd_id == 'G') {
+            send_i2c_message(byte(0), i2c_brake, 2);
         }
         client.read(); // Skip terminating '|'
     }
