@@ -20,7 +20,8 @@ void set_cam_pan(int pan)
 
 void set_cam_tilt(int tilt)
 {
-    int servo_num = 11;
+    //this used to be 11, change because pwm board may have taken voltage damage
+    int servo_num = 9;
     uint16_t pulse_length = map(tilt, 0, 180, SERVOMIN, SERVOMAX); //if f_pan is from 0-180 (angle, if not just change 180)
     cam_pwm.setPWM(servo_num, 0, pulse_length); //sets servo at specific angle
 }
