@@ -98,10 +98,10 @@ String get_uno_amps()
         //t = ((T.f - left_cal)/256.0) * 75.0;
         //x = ((X.f - right_cal)/256.0) * 75.0;
         //here we're converting to millivolts, subtracting the calibration  then getting amperage from 28mV/A
-        t = ((T.f * 5000 / 1024) - (left_cal * 5000 / 1024)) / 28;
-        x = ((X.f * 5000 / 1024) - (right_cal * 5000 / 1024)) / 28;
-        y = (((Y.f * 5000 / 1024) - 500) * 1000 / 133) /1000;
-        z = (((Z.f * 5000 / 1024) - 500) * 1000 / 133) /1000;  
+        t = ((T.f * 4.8828) - (left_cal * 4.8828)) / 28;
+        x = ((X.f * 4.8828) - (right_cal * 4.8828)) / 28;
+        y = (((Y.f * 4.8828) - 500) * 7.519) /1000;
+        z = (((Z.f * 4.8828) - 500) * 7.519) /1000;  
     }
     else
     {

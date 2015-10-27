@@ -24,7 +24,7 @@ float read_anemometer(int sensor_pin)
     //float wind_speed = (((reading - 204.8) * 2.0) / 1023.0);
 
     //lets try again
-    float wind_speed = float(reading) / 1023.0;
+    float wind_speed = (float(reading) / 1023.0) - .04;
     
     // Calculate wind speed from voltage
     //float wind_speed = voltage - .4;
