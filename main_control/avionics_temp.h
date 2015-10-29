@@ -15,7 +15,7 @@ float read_avionics_temp(int sensor_pin)
 String get_avionics_temp_data()
 {
     double upper_temp = read_avionics_temp(A4);
-    double lower_temp = read_avionics_temp(A6);
+    double lower_temp = read_avionics_temp(A6) * 2;
 
     String upper_temp_str(upper_temp);
     String lower_temp_str(lower_temp);
