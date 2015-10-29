@@ -14,8 +14,9 @@ float read_avionics_temp(int sensor_pin)
 
 String get_avionics_temp_data()
 {
+    //as of 10/28 lower avionics temp is for the arm temp
     double upper_temp = read_avionics_temp(A4);
-    double lower_temp = read_avionics_temp(A6) * 2;
+    double lower_temp = read_avionics_temp(A6) * 2; //multiplying by 2 here because temp sensor looks to have been fried
 
     String upper_temp_str(upper_temp);
     String lower_temp_str(lower_temp);

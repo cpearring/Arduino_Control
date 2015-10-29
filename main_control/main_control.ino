@@ -3,6 +3,12 @@
 //#include <mcp_can.h>
 //#include <mcp_can_dfs.h>
 
+/*
+ * TODO:
+ * CASEY - optimize libraries so THEY AREN'T SO BIG DEAR JESUS THE SIZE OF THOSE
+ * 
+ */
+
 #include <Bridge.h>
 #include <Wire.h>
 #include <YunServer.h>
