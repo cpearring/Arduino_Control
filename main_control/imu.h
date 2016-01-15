@@ -16,10 +16,10 @@ void init_imu()
     //gyro.setFullScale(2000);
 }
 
-String get_imu_data()
+size_t get_imu_data(char* buf)
 {
     int16_t ax, ay, az; // Acceleration
-    int16_t avx, avy, avz; // Angular position
+    //int16_t avx, avy, avz; // Angular position
     int16_t mx, my, mz; // Heading
     
     accel.getAcceleration(&ax, &ay, &az);
@@ -27,9 +27,9 @@ String get_imu_data()
     mag.getHeading(&mx, &my, &mz);
 
     // Not using angular velocity yet
-    avx = 0;
-    avy = 0;
-    avz = 0;
+    //avx = 0;
+    //avy = 0;
+    //avz = 0;
 
     // To calculate heading in degrees. 0 degree indicates North
     /*float heading = atan2(my, mx);
@@ -37,11 +37,13 @@ String get_imu_data()
         heading += 2 * M_PI;
     heading *= 180/M_PI;*/
 
-    String ax_str = String(ax) + ":" + String(ay) + ":" + String(az);
+    //String ax_str = String(ax) + ":" + String(ay) + ":" + String(az);
     //String avx_str = String(avx) + ":" + String(avy) + ":" + String(avz);
-    String avx_str = "0:0:0";
-    String m_str = String(mx) + ":" + String(my) + ":" + String(mz);
+    //String avx_str = "0:0:0";
+    //String m_str = String(mx) + ":" + String(my) + ":" + String(mz);
 
-    return String("IMU:")+ax_str + ":" + avx_str + ":" + m_str;
+    //return String("IMU:")+ax_str + ":" + avx_str + ":" + m_str;
+
+    return sprintf(buf, "IMU:%d:%d:%d:0:0:0:%d:%d:%d|", ax, ay, az, mx, my, mz);
 }
 

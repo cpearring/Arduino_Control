@@ -34,7 +34,7 @@
 #include "gps.h"
 #include "i2c.h"
 #include "imu.h"
-#include "pan_tilt_cam.h"
+#include "pwm_board.h"
 #include "avionics_temp.h"
 #include "thermistor.h"
 #include "volt_amp.h"
@@ -49,7 +49,7 @@ YunClient* cur_client = NULL;
 
 void setup()
 {
-  Serial.begin(115200);
+  //Serial.begin(115200);
   //while( !Serial ){ ; }
   Bridge.begin();
 
@@ -57,7 +57,7 @@ void setup()
   Wire.begin();
 
   init_imu();
-  init_pan_tilt_cam();
+  init_pwm_board_cam();
   init_weather();
   amp_init();
   
@@ -130,6 +130,23 @@ void client_loop(YunClient& client)
             }
             
             send_i2c_message(byte(abs(r)), i2c_motor_msg, 2);
+        } else if (cmd_id == 'H') {
+            int l = client.parseInt();
+            client.read(); // Skip '|'
+            int r = client.parseInt();
+            
+            byte l_i2c_motor_msg = i2c_left;
+            if (l > 0) {
+                l_i2c_motor_msg |= i2c_dir_left;
+            }
+
+            byte r_i2c_motor_msg = i2c_right;
+            if (r > 0) {
+                r_i2c_motor_msg |= i2c_dir_right;
+            }
+            
+            send_i2c_message(byte(abs(l)), l_i2c_motor_msg, 2);
+            send_i2c_message(byte(abs(r)), r_i2c_motor_msg, 2);
         } else if (cmd_id == 'C') {
             int f_pan = client.parseInt();
             set_cam_pan(f_pan);
@@ -137,6 +154,7 @@ void client_loop(YunClient& client)
             int f_tilt = client.parseInt();
             set_cam_tilt(f_tilt);
         } else if (cmd_id == 'E') {
+            // SADL
             int sadl = client.parseInt();
             
             byte i2c_motor_msg = i2c_sadl;
@@ -146,14 +164,17 @@ void client_loop(YunClient& client)
             
             send_i2c_message(byte(abs(sadl)), i2c_motor_msg, 2);
         } else if (cmd_id == 'F') {
+            // BLADE
             int blade = client.parseInt();
+
+            //set_blade_power(blade);
             
-            byte i2c_motor_msg = i2c_blade;
+            /*byte i2c_motor_msg = i2c_blade;
             if (blade > 0) {
                 i2c_motor_msg += i2c_dir;
             }
             
-            send_i2c_message(byte(abs(blade)), i2c_motor_msg, 2);
+            send_i2c_message(byte(abs(blade)), i2c_motor_msg, 2);*/
         } else if (cmd_id == 'G') {
             send_i2c_message(byte(0), i2c_brake, 2);
         }
@@ -171,12 +192,15 @@ void stop_rover()
 
 void send_250ms_telemetry()
 {
+    static char buf[256];
+    size_t len = 0;
+  
     if (cur_client) {
-        String va = get_va_data();
-        String imu = get_imu_data();
-        String avionics_temp = get_avionics_temp_data();
+        len += get_va_data(buf+len);
+        len += get_imu_data(buf+len);
+        len += get_avionics_temp_data(buf+len);
     
-        cur_client->print(va+"|"+imu+"|"+avionics_temp+"|");
+        cur_client->print(buf);
     }
 }
 
